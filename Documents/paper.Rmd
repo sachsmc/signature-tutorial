@@ -1,0 +1,50 @@
+---
+title: "Issues in developing mulitvariable models for treatment selection"
+author: "Michael C Sachs and Lisa M McShane"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+    html_document:
+      pandoc_args: ["--bibliography", "references.bib"]
+---
+
+
+# Introduction
+
+## Predictive biomarkers
+
+In what ways can it change clinical practice?
+
+@janes2011measuring, @janes2014approach,  @mcshane2013development, @polley2013statistical
+
+## Overview of biomarker signatures
+
+- Do I include all features or a subset?
+    + Which subset?
+    + How do I combine the features?
+- Transformations?
+- Weight and combine with regression coefficients?
+- What coefficients?
+- Thresholds/Cutoffs before or after combining?
+
+References on developing signatures @simon2003pitfalls, @hastie2009elements, @moons2012riskI, @moons2012riskII
+
+## Data analysis example
+
+@zhu2010prognostic
+
+
+# Issues
+
+## Estimating Prediction Error
+
+## Estimating Clinical Benefit
+
+## Developing and validating a predictive biomarker for an effective treatment
+
+Identify the non-responders and demonstrate that they do not benefit (hard)
+
+## Developing and validating a predictive biomarker for an ineffective treatment
+
+Identify the responders and demonstrate that they do benefit (no quite as hard)
+
+# Conclusion
