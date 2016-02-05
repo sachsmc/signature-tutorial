@@ -3,48 +3,98 @@ title: "Issues in developing mulitvariable models for treatment selection"
 author: "Michael C Sachs and Lisa M McShane"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output: 
-    html_document:
-      pandoc_args: ["--bibliography", "references.bib"]
+    pdf_document:
+      pandoc_args: ["--bibliography", "bookchapter-1.bib"]
 ---
 
 
 # Introduction
 
-## Predictive biomarkers
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE)
+```
 
-In what ways can it change clinical practice?
+Omics technologies that generate a large amount of molecular data about biospecimens have the potential to provide information about a patient's disease characteristics above and beyond standard clinical and pathological features. By combining the information from a large amount of molecular features into a multivariable model, hereafter referred to as a _biomarker signature_, there is the opportunity to identify distinct subgroups of patients for whom treatment decisions can be personalized. A multivariable biomarker can guide the decisions to treat or not to treat and help identify the patients who are most likely to survive. The key challenge we address in this paper is to estimate the precise combination of features from a high dimensional molecular assay suited to the clinical context. 
+
+## Terminology and Notation
+
+A **biomarker signature** is a transformation of multiple individual features, typically molecular characterstics measured on a multiplex assay, to a one-dimensional space. Specifically, let $X$ denote the set of $p$ features under consideration. The signature is an unknown function $f(X): \mathbb{R}^p \mapsto \mathbb{R}^1$. The signature may be continuous, take multiple discrete values, or be dichotomous. 
+
+Let $S$ denote the development dataset, which includes $X$, an outcome $Y$, a treatment $Z$, and possibly other variables. $S$ is a sample of size $n$ from distribution $\mathcal{P}$ with domain $\mathcal{X}$. Let $\mathcal{F}$ be a mapping from $\mathcal{X}$ to the space of continuous functions with domain $\mathbb{R}^p$ and range $\mathbb{R}$, $\mathcal{D}$. Thus $\mathcal{F}: \mathcal{X} \mapsto \mathcal{D}$ denotes the process or algorithm through which a particular $f$ is estimated. We do not place any other restrictions on $\mathcal{F}$, it could be a clustering approach, a regression approach, a combination of both, or something else entirely. We will use $\mathcal{F}$ to denote the manner in which $f$ is estimated and will write $f \in \mathcal{F}$ to denote that $f$ is estimated with the class of methods $\mathcal{F}$. 
+
+Let $\phi: \mathcal{D} \times \mathcal{X} \mapsto \mathbb{R}$ denote the statistic that quantifies the performance of the function $f$, such as predictive accuracy, mean squared error, or area under the receiver operating characteristic (ROC) curve (AUC). This is a function of both $f$ and $S$. We are interested in estimating $E_\mathcal{P}[\phi_f(S)]$, which is the expected error under the data generation mechanism, for a particular $f \in \mathcal{F}$. This allows us to understand how the signature will perform on future observations generated from $\mathcal{P}$. We may also be interested in estimating $E_\mathcal{P}[\phi_f(S)]$ *for all* $f \in \mathcal{F}$, which is the generalization error for $f$ generated using mechanism $\mathcal{F}$. This doesn't guide outside researchers as to which specific $f$ to use, yet it is useful for development because it tells us how much signal is in the data. As shorthand we will write this as $E_\mathcal{P}[\phi_\mathcal{F}(S)]$
+
+A signature that **reliably predicts** an outcome $Y$ is one that has generalization error small enough for the clinical context. Such a signature may be useful for treatment selection, prognosis, or other type of clinical management. 
+
+## Overview of biomarker signature development
+
+The goal of the development phase of a biomarker signature is to provide a valid estimate of the performance of $f \in \mathcal{F}$. Optionally, one can provide a specification of $f$ for others to use, and we want that particular $f$ to be estimated as precisely as possible. Typically, a specific $f$ is estimated using $\mathcal{F}$ based on some training data. This can be done using a variety of different methods. In recent years there have been an explosion in the literature of computational approaches to classification and prediction, and we do not intend to summarize them all here. Some excellent reviews of such approaches are @hastie2009elements and @moons2012riskI. The main considerations in signature estimation are identifying the features to include, deciding what transformations to apply, determining how to combine the features, and whether to apply thresholds/cutoffs to the resulting signature. 
+
+Signatures can be estimated by identifying naturally occuring clusters, or intrinsic subtypes using $X$ alone without regard to the outcome $Y$. This was the case with the PAM-50 gene signature [reference needed], and later, the intrinsic subtypes were shown to be strongly associated with clinical outcomes. Supervised learning techniques can also be used to identify signatures, as was the case with Oncotype DX [@paik2004multigene]. In this case, regression-based methods are used to estimate a model that is highly predictive for the outcome $Y$. In the case of Oncotype DX, the outcome in question was recurrence of breast cancer. 
+
+Another approach to identifying treatment-selection signatures is to use regression techniques to estimate a signature that has a strong interaction with a particular treatment. It is possible, and quite common in high-dimensional settings, to combine multiple approaches to estimating $f$. For instance, a data-reduction step by variable selection or clustering may be performed before doing regression analysis on the resulting components. 
+
+No matter what the particular model building method is, our main concern and focus of this paper is with obtaining a valid estimate of its performance, that is, a good estimate of $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. This depends on the true signal in the data and the specific algorithm $\mathcal{F}$ used. An optional component of the development phase is to provide a specification of $f$ for others to use on independent data or in clinical practice. 
+
+## Biomarker signatures in clinical practice
+
+A biomarker signature can inform clinical practice in a number of ways. 
+In what ways can it change clinical practice? 
 
 @janes2011measuring, @janes2014approach,  @mcshane2013development, @polley2013statistical
 
-## Overview of biomarker signatures
-
-- Do I include all features or a subset?
-    + Which subset?
-    + How do I combine the features?
-- Transformations?
-- Weight and combine with regression coefficients?
-- What coefficients?
-- Thresholds/Cutoffs before or after combining?
-
-References on developing signatures @simon2003pitfalls, @hastie2009elements, @moons2012riskI, @moons2012riskII
 
 ## Data analysis example
 
-@zhu2010prognostic
+Throughout this paper, we reanalyze data from @zhu2010prognostic. Briefly, the data of interest are from the JBR.10 trial, which was a randomized controlled trial of adjuvant vinorelbine/cisplatin (ACT) versus observation alone (OBS) in 482 participants with non small cell lung cancer (NSCLC). Of those 482 participants, 169 had frozen tissue collected, and of those samples, 133 (71 in ACT and 62 in OBS) had gene-expression profiling done using U133A oligonucleotide microarrays (Affymetrix, Santa Clara, CA). 
+
+The goal of the @zhu2010prognostic paper was to identify a multi-gene signature that strongly predicts prognosis, and the hypothesis was that the poor prognosis subgroup would benefit more from ACT compared to the good prognosis subgroup. The annotated gene expression data and clinical information are available from the Gene Expression Omnibus (identifier: GSE14814, @edgar2002gene). Batch effects were removed using the ComBat function in the sva R package [@leeksva] and then the gene expression values were centered by their means and scaled by their standard deviations. We reproduce their analysis while illustrating the key issues under discussion. 
 
 
 # Issues
 
 ## Estimating Prediction Error
 
-## Estimating Clinical Benefit
+```{r funcs}
+print("dick butt")
+```
 
-## Developing and validating a predictive biomarker for an effective treatment
+Recall that the main goal is to estimate $E_\mathcal{P}[\phi_\mathcal{F}(S)]$, the expected error on future observations for $f \in \mathcal{F}$. This can be estimated with the in-sample empirical estimate: $\hat{E}[\phi_f(S)] = \frac{1}{n}\sum_{i=1}^n\phi_f(s_i)$ for a particular $f$. However, if $S$ is used to estimate $f$ then the estimate will be biased due to overfitting, that is, $|E_\mathcal{P}[\phi_f(S)] - \hat{E}[\phi_f(S)]|$ will be large. This is because $\phi$ depends on $f$, and thus the statistic $\phi$ is being adaptively defined based on the observed data $S$, hence causing the overfitting. 
+
+A traditional remedy to this problem of overfitting is the split sample approach. First, randomly partition $S$ into the training sample $S_t$ and the holdout sample $S_h$ with sample sizes $n_t$ and $n_h$, respectively. Then, $S_h$ is hidden from the analyst while $\mathcal{F}$ is applied to $S_t$ to estimate the signature function $f_t$. Then, with $f_t$, and therefore $\phi$ fixed, $\hat{E}[\phi_{f_t}(S_h)]$ is an unbiased estimator of both $E_{\mathcal{P}}[\phi_{f_t}(S)]$ and $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. As a side-effect, the specific form of $f_t$ that is fixed using the $S_t$ partition can be reported as the function for others to use, therefore the aforementioned estimator is also an estimate of the error for that specific $f_t$. The drawback of the split-sample approach is that $f$ is not estimated as precisely as it would be compared to using the entire dataset $S$ and for the same reason neither is $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. @dobbin2011optimally investigate how to optimally split a dataset into training and holdout partitions. 
+
+Another approach to avoid overfitting is cross-validation, which is a resampling based approach. For a fixed integer $k$, which can be between 1 and $n$, we randomly select a partition of $k$ observations from $S$, denoted $S_k$. Then $f_{-k}$ is estimated and fixed by appling $\mathcal{F}$ on $S_{-k}$ which is the the subset of $S$ that is disjoint from $S_k$. Then, we get an estimate $\hat{E}[\phi_{f_{-k}}(S_k)]$ which is an unbiased estimate of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. This process is repeated $K$ times to yield $K$ estimates. Each of these estimates is unbiased, but noisy, because typically $k$ is very small relative to $n$. Thus, we average over $K$ to get a less noisy estimate. This process is called "leave $k$ out" cross-validation. Note that for each partition that is selected, we obtain a new estimate of $f$, therefore the estimator is an estimator only for $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. Typically, if a specific form for $f$ is desired, it would be estimated using the entire dataset $S$. 
+
+A variation on the cross-validation approach is bootstrapping. In that case, a sample $S_b$ of size $n$ is sampled _with replacement_ from $S$. Then $f_{b}$ is estimated and fixed by applying $\mathcal{F}$ to $S_{b}$. The error $\phi$ is estimated on the subset of $S$ that is disjoint from $S_b$: $S_{-b}$. This process is repeated $K$ times to yield $K$ estimates. @efron1997improvements showed that these estimates are still biased due to the sampling with replacement. Thus they propose the 0.632 estimate: 
+$$
+\hat{E}^*[\phi_{\mathcal{F}}(S)] = .368 \hat{E}[\phi_{f}(S)] + 0.632 \hat{E}[\phi_{f_b}(S_{-b})],
+$$
+where $\hat{E}[\phi_{f}(S)]$ is the naive estimate of $\phi_f$ using the entire dataset. 
+
+To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with $n$ samples, each with a binary outcome $Y$ with prevalence 0.3, and $d$ features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature estimation procedure entails a feature selection step, in which each feature is regressed against $Y$ in a logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines our final signature. 
+
+We compare each of the three methods described above along with the biased approaches of using the full sample to select the features, followed by either fitting the model on a split sample, or using fitting the full model inside the cross validation step. Note that @zhu2010prognostic used the latter approach, which explains the differences in our results. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. 
+
+
+## Evaluating Clinical Benefit
+
+While a biomarker signature may accurately predict a clinical outcome, that does not neccessarily imply that the signature is clinically useful. 
+
+### Developing a biomarker signature in a single-arm trial
+
+Classify the binary response to treatment. 
+
+### Developing and validating a predictive biomarker for an effective treatment
 
 Identify the non-responders and demonstrate that they do not benefit (hard)
 
-## Developing and validating a predictive biomarker for an ineffective treatment
+### Developing and validating a predictive biomarker for an ineffective treatment
 
 Identify the responders and demonstrate that they do benefit (no quite as hard)
 
 # Conclusion
+
+What I said and how I said it.
+
+# References
