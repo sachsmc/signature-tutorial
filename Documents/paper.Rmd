@@ -57,7 +57,7 @@ The goal of the @zhu2010prognostic paper was to identify a multi-gene signature 
 ## Estimating Prediction Error
 
 ```{r funcs}
-print("dick butt")
+print("Insert simulation results")
 ```
 
 Recall that the main goal is to estimate $E_\mathcal{P}[\phi_\mathcal{F}(S)]$, the expected error on future observations for $f \in \mathcal{F}$. This can be estimated with the in-sample empirical estimate: $\hat{E}[\phi_f(S)] = \frac{1}{n}\sum_{i=1}^n\phi_f(s_i)$ for a particular $f$. However, if $S$ is used to estimate $f$ then the estimate will be biased due to overfitting, that is, $|E_\mathcal{P}[\phi_f(S)] - \hat{E}[\phi_f(S)]|$ will be large. This is because $\phi$ depends on $f$, and thus the statistic $\phi$ is being adaptively defined based on the observed data $S$, hence causing the overfitting. 
