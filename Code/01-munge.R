@@ -60,10 +60,18 @@ modcom <- model.matrix( ~ 1, data = gdat)
 batchadj <- ComBat(gexpr, batch = gdat$batch, mod = modcom, prior.plots = TRUE)
 
 expradj <- as.data.frame(t(batchadj))
+
+## pca
+pca.fit <- prcomp(t(batchadj), center = TRUE, scale. = TRUE)
+pca.dat <- as.data.frame(pca.fit$x[, 1:25])
+pca.dat$ID <- rownames(pca.dat)
+##
+
 expradj$ID <- rownames(expradj)
 
 gdat <- merge(expradj, pheno, by = "ID")
 
+pca.dat2 <- merge(pca.dat, pheno, by = "ID")
 ## make sure no merging errors in data
 
 pheno.xls <- import("../Data/Zhu_2010_JCO_microarray_pts_clin_info.xls", sheet = 1)
@@ -75,6 +83,6 @@ check2 <- subset(check, OS.time == `OS time`)
 # we good
 
 save(gdat, file = paste0("../Data/jbl10-data-", Sys.Date(), ".RData"))
-
+save(pca.dat2, file = paste0("../Data/jbl10-pca-", Sys.Date(), ".RData"))
 
 
