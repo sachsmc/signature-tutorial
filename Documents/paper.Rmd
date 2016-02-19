@@ -5,14 +5,23 @@ date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output: 
     pdf_document:
       pandoc_args: ["--bibliography", "bookchapter-1.bib"]
+fontsize: 11pt
+geometry: margin=1in
 ---
 
+\linespread{2}
 
 # Introduction
 
 ```{r setup, include = FALSE}
+library(ggplot2)
 library(knitr)
 opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE)
+knit_hooks$set(plot = function(x, options) {
+  if ('tikz' %in% options$dev && !options$external) {
+    hook_plot_tex(x, options)
+  } else hook_plot_md(x, options)
+})
 ```
 
 Omics technologies that generate a large amount of molecular data about biospecimens have the potential to provide information about a patient's disease characteristics above and beyond standard clinical and pathological features. By combining the information from a large amount of molecular features into a multivariable model, hereafter referred to as a _biomarker signature_, there is the opportunity to identify distinct subgroups of patients for whom treatment decisions can be personalized. A multivariable biomarker can guide the decisions to treat or not to treat and help identify the patients who are most likely to survive. The key challenge we address in this paper is to estimate the precise combination of features from a high dimensional molecular assay suited to the clinical context. 
@@ -39,8 +48,11 @@ No matter what the particular model building method is, our main concern and foc
 
 ## Biomarker signatures in clinical practice
 
-A biomarker signature can inform clinical practice in a number of ways. 
-In what ways can it change clinical practice? 
+A biomarker signature can inform clinical practice in a number of ways, regardless of how the signature was developed. A highly prognostic signature may identify a subpopulation that has such a good chance of long term survival, that they do not need to undergo treatment that carries risks and side effects such as chemotherapy. In the context of a specific therapy that targets a particular molecular pathway, a signature may identify a subpopulation that does not benefit from that therapy, thereby guiding the decision to treat or not. A signature that was developed to identify intrinsic molecular subtypes could be both prognostic and informative about the effectiveness of a therapy. 
+
+The key point is that signatures are useful if they can correctly and reliably classify patients into distinct subgroups for which different treatment decisions would be made. There are two distinct but related statistical concepts involved here: calibration or accuracy, and discrimination. Signatures are often optimized to be well-calibrated, that is, highly accurate for predicting outcomes. However if the signature does not separate a population into distinct subgroups, then it is unlikely to be informative enough to change clinical practice. 
+
+In the development process it is important to evaluate both of these statistical concepts. Furthermore, it is not trivial to assess each of these in a valid manner when the data are used to define the signature itself. We illustrate the potential for bias, and remedies, in our examples. 
 
 @janes2011measuring, @janes2014approach,  @mcshane2013development, @polley2013statistical
 
@@ -49,24 +61,34 @@ In what ways can it change clinical practice?
 
 Throughout this paper, we reanalyze data from @zhu2010prognostic. Briefly, the data of interest are from the JBR.10 trial, which was a randomized controlled trial of adjuvant vinorelbine/cisplatin (ACT) versus observation alone (OBS) in 482 participants with non small cell lung cancer (NSCLC). Of those 482 participants, 169 had frozen tissue collected, and of those samples, 133 (71 in ACT and 62 in OBS) had gene-expression profiling done using U133A oligonucleotide microarrays (Affymetrix, Santa Clara, CA). 
 
-The goal of the @zhu2010prognostic paper was to identify a multi-gene signature that strongly predicts prognosis, and the hypothesis was that the poor prognosis subgroup would benefit more from ACT compared to the good prognosis subgroup. The annotated gene expression data and clinical information are available from the Gene Expression Omnibus (identifier: GSE14814, @edgar2002gene). Batch effects were removed using the ComBat function in the sva R package [@leeksva] and then the gene expression values were centered by their means and scaled by their standard deviations. We reproduce their analysis while illustrating the key issues under discussion. 
+The goal of the @zhu2010prognostic paper was to identify a multi-gene signature that strongly predicts prognosis, and the hypothesis was that the poor prognosis subgroup would benefit more from ACT compared to the good prognosis subgroup. The signature was trained to predict disease specific survival. The annotated gene expression data and clinical information are available from the Gene Expression Omnibus (identifier: GSE14814, @edgar2002gene). Batch effects were removed using the ComBat function in the sva R package [@leeksva] and then the gene expression values were centered by their means and scaled by their standard deviations. We reproduce their analysis while illustrating the key issues under discussion. 
+
+The authors of @zhu2010prognostic present results that mainly focus on the discrimination ability of their estimated signature. They do that by demonstrating that the two risk subgroups predicted by their signature (high risk and low risk) have separation in their survival curves and that the hazard ratio for their signature is large and significant even when adjusting for other risk factors. They do not directly address calibration, that is, whether their signature accurately predicts survival times. 
 
 
 # Issues
 
-## Estimating Prediction Error
+Recall that the main goal is to estimate $E_\mathcal{P}[\phi_\mathcal{F}(S)]$, the expected value of a given statistic on future observations for $f \in \mathcal{F}$. This can be estimated with the in-sample empirical estimate: $\hat{E}[\phi_f(S)] = \frac{1}{n}\sum_{i=1}^n\phi_f(s_i)$ for a particular $f$. However, if $S$ is used to estimate $f$ then the estimate will be biased due to overfitting, that is, $|E_\mathcal{P}[\phi_f(S)] - \hat{E}[\phi_f(S)]|$ will be large. This is because $\phi$ depends on $f$, and thus the statistic $\phi$ is being adaptively defined based on the observed data $S$, hence causing the overfitting. 
+
+In many cases during signature development, the statistic $\phi$ in question is a statistic that relates to calibration, such as classification accuracy, correlation or mean squared error. While a biomarker signature may accurately predict a clinical outcome, that does not neccessarily imply that the signature is clinically useful. As we mentioned before, two statistical critera are necessary for determining clinical usefulness: calibration and discrimination. To assess discrimination, a different statistic $\phi$ may be used, such as an odds ratio, hazard ratio, or difference in survival probabilities. Evaluation of $\phi$ is also subject to bias due to overfitting, a fact that is commonly overlooked in the medical literature. 
+
+In @zhu2010prognostic, $\phi$ was the hazard ratio comparing the high risk and low risk groups as defined by the JBL.10 signature $f$. The risk groups were determined by the signature $f$, which was estimated using $S$ the same data that is then used to estimate the hazard ratio which is estimated to be 15. They go on to assess the discrimination of the JBL.10 signature in a series of independent data sets, in which they find hazard ratios around 2. We will reanalyze the dataset and illustrate some remedies for avoiding bias in determining the discrimination (an additionally the calibration) of this signature. 
+
+@altman2000we, @buyse2007towards, @moons2012riskI, @moons2012riskII
+ 
+
+## Remedies to Overfitting
 
 ```{r funcs}
 print("Insert simulation results")
 ```
 
-Recall that the main goal is to estimate $E_\mathcal{P}[\phi_\mathcal{F}(S)]$, the expected error on future observations for $f \in \mathcal{F}$. This can be estimated with the in-sample empirical estimate: $\hat{E}[\phi_f(S)] = \frac{1}{n}\sum_{i=1}^n\phi_f(s_i)$ for a particular $f$. However, if $S$ is used to estimate $f$ then the estimate will be biased due to overfitting, that is, $|E_\mathcal{P}[\phi_f(S)] - \hat{E}[\phi_f(S)]|$ will be large. This is because $\phi$ depends on $f$, and thus the statistic $\phi$ is being adaptively defined based on the observed data $S$, hence causing the overfitting. 
 
 A traditional remedy to this problem of overfitting is the split sample approach. First, randomly partition $S$ into the training sample $S_t$ and the holdout sample $S_h$ with sample sizes $n_t$ and $n_h$, respectively. Then, $S_h$ is hidden from the analyst while $\mathcal{F}$ is applied to $S_t$ to estimate the signature function $f_t$. Then, with $f_t$, and therefore $\phi$ fixed, $\hat{E}[\phi_{f_t}(S_h)]$ is an unbiased estimator of both $E_{\mathcal{P}}[\phi_{f_t}(S)]$ and $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. As a side-effect, the specific form of $f_t$ that is fixed using the $S_t$ partition can be reported as the function for others to use, therefore the aforementioned estimator is also an estimate of the error for that specific $f_t$. The drawback of the split-sample approach is that $f$ is not estimated as precisely as it would be compared to using the entire dataset $S$ and for the same reason neither is $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. @dobbin2011optimally investigate how to optimally split a dataset into training and holdout partitions. 
 
 Another approach to avoid overfitting is cross-validation, which is a resampling based approach. For a fixed integer $k$, which can be between 1 and $n$, we randomly select a partition of $k$ observations from $S$, denoted $S_k$. Then $f_{-k}$ is estimated and fixed by appling $\mathcal{F}$ on $S_{-k}$ which is the the subset of $S$ that is disjoint from $S_k$. Then, we get an estimate $\hat{E}[\phi_{f_{-k}}(S_k)]$ which is an unbiased estimate of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. This process is repeated $K$ times to yield $K$ estimates. Each of these estimates is unbiased, but noisy, because typically $k$ is very small relative to $n$. Thus, we average over $K$ to get a less noisy estimate. This process is called "leave $k$ out" cross-validation. Note that for each partition that is selected, we obtain a new estimate of $f$, therefore the estimator is an estimator only for $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. Typically, if a specific form for $f$ is desired, it would be estimated using the entire dataset $S$. 
 
-A variation on the cross-validation approach is bootstrapping. In that case, a sample $S_b$ of size $n$ is sampled _with replacement_ from $S$. Then $f_{b}$ is estimated and fixed by applying $\mathcal{F}$ to $S_{b}$. The error $\phi$ is estimated on the subset of $S$ that is disjoint from $S_b$: $S_{-b}$. This process is repeated $K$ times to yield $K$ estimates. @efron1997improvements showed that these estimates are still biased due to the sampling with replacement. Thus they propose the 0.632 estimate: 
+A variation on the cross-validation approach is bootstrapping. In that case, a sample $S_b$ of size $n$ is sampled _with replacement_ from $S$. Then $f_{b}$ is estimated and fixed by applying $\mathcal{F}$ to $S_{b}$. The error $\phi$ is estimated on the subset of $S$ that is disjoint from $S_b$: $S_{-b}$. This process is repeated $K$ times to yield $K$ estimates. These $K$ estimates are averaged to obtain the mean over the bootstrap replicates. @efron1997improvements suggest a variation, the 0.632 estimate: 
 $$
 \hat{E}^*[\phi_{\mathcal{F}}(S)] = .368 \hat{E}[\phi_{f}(S)] + 0.632 \hat{E}[\phi_{f_b}(S_{-b})],
 $$
@@ -74,16 +96,14 @@ where $\hat{E}[\phi_{f}(S)]$ is the naive estimate of $\phi_f$ using the entire 
 
 To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with $n$ samples, each with a binary outcome $Y$ with prevalence 0.3, and $d$ features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature estimation procedure entails a feature selection step, in which each feature is regressed against $Y$ in a logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines our final signature. 
 
-We compare each of the three methods described above along with the biased approaches of using the full sample to select the features, followed by either fitting the model on a split sample, or using fitting the full model inside the cross validation step. Note that @zhu2010prognostic used the latter approach, which explains the differences in our results. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. 
+We compare each of the three methods described above along with the biased approaches of using the full sample to select the features, followed by either fitting the model on a split sample, or using fitting the full model inside the cross validation step. Note that @zhu2010prognostic used the latter approach, which explains the differences in our results. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. In our simulation, we look at two different statistics, classification accuracy to assess calibration and the odds ratio for the outcome comparing the signature groups to assess discrimination.
 
 
-## Evaluating Clinical Benefit
+## Evaluating Calibration
 
-While a biomarker signature may accurately predict a clinical outcome, that does not neccessarily imply that the signature is clinically useful. 
 
-### Developing a biomarker signature in a single-arm trial
+## Evaluating Discrimination and Clinical Benefit
 
-Classify the binary response to treatment. 
 
 ### Developing and validating a predictive biomarker for an effective treatment
 
