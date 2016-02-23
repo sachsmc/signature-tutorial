@@ -37,62 +37,73 @@ fit.superpc <- function(dat0, cldat){
 
   ## select number of genes
 
-  cors <- cors[unlist(cors$X2) < .005, ]
-  n.gen.cands <- 5:nrow(cors)
+  cors <- cors[cors$X2 < .005, ]
+  seldat0 <- dat0 %>% select(ID, gene, zexpression) %>%
+    filter(gene %in% cors$gene) %>% spread(gene, zexpression)
 
-  p.ngenes <- sapply(n.gen.cands, function(n.genes){
+  seldat0[, 2:ncol(seldat0)] <- lapply(2:ncol(seldat0), function(it){
 
-    sel.genes <- cors$gene[rank(-abs(cors$X1)) <= n.genes]
-    coeffs <- cors$X1[rank(-abs(cors$X1)) <= n.genes]
-
-    pcas <- dat0 %>% select(ID, gene, zexpression) %>%
-      filter(gene %in% sel.genes) %>% spread(gene, zexpression)
-    pcamat <- as.matrix(pcas[, -1]) * matrix(rep(coeffs, nrow(pcas)), nrow = nrow(pcas), byrow = TRUE)
-    rownames(pcamat) <- pcas$ID
-
-    pc.fit <- prcomp(pcamat, center = TRUE, scale. = TRUE)
-    pc.dat <- as.data.frame(pc.fit$x[, 1:5])
-    pc.dat$ID <- rownames(pc.dat)
-
-    pdonk <- merge(cldat, pc.dat, by = "ID")
-    fit.cox <- coxph(Surv(DSS.time, DSS.status == "Dead") ~ PC1 + PC2 + PC3 + PC4 + PC5, data = pdonk)
-    summary(fit.cox)$concordance[1]
+    unlist(cors %>% filter(gene == colnames(seldat0[, it])) %>% `$`("X1") * seldat0[, it])
 
   })
 
-  n.gene.sel <- n.gen.cands[which(order(-abs(p.ngenes)) == 1)]
-  sel.genes <- cors$gene[rank(-abs(cors$X1)) <= n.gene.sel]
+  seldat0 <- merge(seldat0, cldat, by = "ID", all.y = FALSE)
 
-  pcas <- dat0 %>% select(ID, gene, zexpression) %>%
-    filter(gene %in% sel.genes) %>% spread(gene, zexpression)
-  pcamat <- as.matrix(pcas[, -1])
-  rownames(pcamat) <- pcas$ID
+  ngen.max <- 25
 
-  pc.fit <- prcomp(pcamat, center = FALSE, scale. = FALSE)
-  pc.dat <- as.data.frame(pc.fit$x[, 1:5])
-  pc.dat$ID <- rownames(pc.dat)
+  ## start with most significant gene and add 1 at a time
 
-  pdonk <- merge(cldat, pc.dat, by = "ID")
-  fit.cox <- coxph(Surv(DSS.time, DSS.status == "Dead") ~ PC1 + PC2 + PC3 + PC4 + PC5, data = pdonk)
+  gen.cand <- gen.remain <- cors$gene[order(cors$X2)]
+  dateval <- datfin <- seldat0
+  dateval$cand.score <- datfin$score <- 0
+  ngen.0 <- ngen.cur <- 0
+  cors.num <- gen.in <- NULL
+  while(ngen.cur < ngen.max){
 
-  lps <- predict(fit.cox, type = 'lp')
+    cors.try <- rep(NA, length(gen.remain))
+    names(cors.try) <- gen.remain
+    for(gen.try in gen.remain){
+      dateval$cand.score <- unlist(dateval$cand.score + dateval[, gen.try])
+      cors.try[gen.try] <- survConcordance(Surv(DSS.time, DSS.status == "Dead") ~ cand.score, data = dateval)$concordance
+    }
+    # select score with highest concordance
+    gen.sel <- names(sort(cors.try, decreasing = TRUE)[1])
+    datfin$score <- unlist(datfin$score + datfin[, gen.sel])
 
+    gen.remain <- setdiff(gen.remain, gen.sel)
+    gen.in <- append(gen.in, gen.sel)
+    dateval$cand.score <- datfin$score
+
+    cors.num <- append(cors.num, survConcordance(Surv(DSS.time, DSS.status == "Dead") ~ score, data = datfin)$concordance)
+    ngen.cur <- ngen.cur + 1
+
+  }
+
+  fin.sig <- gen.in[1:which(cors.num == max(cors.num))]
+
+  seldat1 <- dat0 %>% select(ID, gene, zexpression) %>%
+    filter(gene %in% fin.sig) %>% spread(gene, zexpression)
+  seldat1 <- merge(seldat1, cldat, by = "ID", all.y = FALSE)
+
+  form.make <- as.formula(paste0("Surv(DSS.time, DSS.status == 'Dead') ~ ", paste(paste0("`", fin.sig, "`"), collapse = "+")))
+  fit.cox <- coxph(form.make, data = seldat1)
+
+  datfin$score <- lps <- predict(fit.cox, type = "lp")
   ## middle 75%
   c.cands <- sort(lps)[floor(.25 * length(lps)):floor(.75 * length(lps))]
   p.cands <- sapply(c.cands, function(c.cand){
-    ltest <- survdiff(Surv(pdonk$DSS.time, pdonk$DSS.status == "Dead") ~ I(lps > c.cand))
+    ltest <- survdiff(Surv(DSS.time, DSS.status == "Dead") ~ I(score > c.cand), data = datfin)
     pchisq(ltest$chisq, df = 1, lower.tail = FALSE)
   })
   cutoff <- c.cands[which(order(p.cands) == 1)]
-  list(pc.fit = pc.fit, cox.fit = fit.cox, cutoff = cutoff)
+
+  list(cox.fit = fit.cox, cutoff = cutoff)
 
 }
 
 
 predict.superpc <- function(dat0, las.fit){
 
-  pcests <- predict(las.fit$pc.fit, newdata = dat0)[, 1:5]
-  dat0 <- cbind(dat0, pcests)
   coxests <- predict(las.fit$cox.fit, newdata = dat0, type = 'lp')
   list(lps = coxests, riskgrp = coxests > las.fit$cutoff)
 
@@ -117,6 +128,8 @@ fit.all <- fit.superpc(subset(ldat, Post.Surgical.Treatment == "OBS"), cldat)
 #fit.obs <- fit.superpc(ldat, cldat)
 fitted <- predict.superpc(subset(gdat, Post.Surgical.Treatment == "OBS"), fit.all)
 eval.predict(subset(gdat, Post.Surgical.Treatment == "OBS"), fit.all)
+
+
 
 ## partial resubstitution
 

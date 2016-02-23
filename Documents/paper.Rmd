@@ -79,10 +79,6 @@ In @zhu2010prognostic, $\phi$ was the hazard ratio comparing the high risk and l
 
 ## Remedies to Overfitting
 
-```{r funcs}
-print("Insert simulation results")
-```
-
 
 A traditional remedy to this problem of overfitting is the split sample approach. First, randomly partition $S$ into the training sample $S_t$ and the holdout sample $S_h$ with sample sizes $n_t$ and $n_h$, respectively. Then, $S_h$ is hidden from the analyst while $\mathcal{F}$ is applied to $S_t$ to estimate the signature function $f_t$. Then, with $f_t$, and therefore $\phi$ fixed, $\hat{E}[\phi_{f_t}(S_h)]$ is an unbiased estimator of both $E_{\mathcal{P}}[\phi_{f_t}(S)]$ and $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. As a side-effect, the specific form of $f_t$ that is fixed using the $S_t$ partition can be reported as the function for others to use, therefore the aforementioned estimator is also an estimate of the error for that specific $f_t$. The drawback of the split-sample approach is that $f$ is not estimated as precisely as it would be compared to using the entire dataset $S$ and for the same reason neither is $E_\mathcal{P}[\phi_\mathcal{F}(S)]$. @dobbin2011optimally investigate how to optimally split a dataset into training and holdout partitions. 
 
@@ -97,6 +93,29 @@ where $\hat{E}[\phi_{f}(S)]$ is the naive estimate of $\phi_f$ using the entire 
 To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with $n$ samples, each with a binary outcome $Y$ with prevalence 0.3, and $d$ features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature estimation procedure entails a feature selection step, in which each feature is regressed against $Y$ in a logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines our final signature. 
 
 We compare each of the three methods described above along with the biased approaches of using the full sample to select the features, followed by either fitting the model on a split sample, or using fitting the full model inside the cross validation step. Note that @zhu2010prognostic used the latter approach, which explains the differences in our results. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. In our simulation, we look at two different statistics, classification accuracy to assess calibration and the odds ratio for the outcome comparing the signature groups to assess discrimination.
+
+
+```{r cvsims}
+load("../Code/cvsim-result.RData")
+cvres <- do.call("rbind", cvsims)
+library(tidyr)
+
+cvlong <- do.call("rbind", lapply(1:ncol(cvres), function(i){
+  
+  cl <- cvres[, i]
+  splow <- strsplit(colnames(cvres)[i], ".", fixed = TRUE)
+  nm <- paste(unlist(sapply(splow, function(s) rev(rev(s)[-1]))), collapse = ".")
+  cls <- sapply(splow, function(s) rev(s)[1])
+  data.frame(value = cvres[, i], stat = cls, scen = nm, stringsAsFactors = FALSE)
+  
+}))
+
+ggplot(subset(cvlong, stat == "AUC"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") + 
+  theme_bw(base_size = 13, base_family = "serif") + 
+  scale_x_discrete("Estimation Approach", labels = c("Bootstrap", "Leave 10 out CV", "Leave 100 out CV", 
+                                                     "30% Holdout", "50% Holdout", "Resubstitution", "Partial CV", "Partial Holdout")) + 
+  ylab("Area Under the ROC Curve")
+```
 
 
 ## Evaluating Calibration
