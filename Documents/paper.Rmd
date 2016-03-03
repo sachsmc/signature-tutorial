@@ -5,7 +5,7 @@ date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output: 
     pdf_document:
       pandoc_args: ["--bibliography", "bookchapter-1.bib"]
-fontsize: 11pt
+fontsize: 12pt
 geometry: margin=1in
 ---
 
@@ -14,9 +14,15 @@ geometry: margin=1in
 # Introduction
 
 ```{r setup, include = FALSE}
+library(dplyr)
 library(ggplot2)
 library(knitr)
-opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE)
+library(survival)
+library(ggkm)
+library(tidyr)
+
+
+opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE, warning = FALSE)
 knit_hooks$set(plot = function(x, options) {
   if ('tikz' %in% options$dev && !options$external) {
     hook_plot_tex(x, options)
@@ -32,7 +38,7 @@ A **biomarker signature** is a transformation of multiple individual features, t
 
 Let $S$ denote the development dataset, which includes $X$, an outcome $Y$, a treatment $Z$, and possibly other variables. $S$ is a sample of size $n$ from distribution $\mathcal{P}$ with domain $\mathcal{X}$. Let $\mathcal{F}$ be a mapping from $\mathcal{X}$ to the space of continuous functions with domain $\mathbb{R}^p$ and range $\mathbb{R}$, $\mathcal{D}$. Thus $\mathcal{F}: \mathcal{X} \mapsto \mathcal{D}$ denotes the process or algorithm through which a particular $f$ is estimated. We do not place any other restrictions on $\mathcal{F}$, it could be a clustering approach, a regression approach, a combination of both, or something else entirely. We will use $\mathcal{F}$ to denote the manner in which $f$ is estimated and will write $f \in \mathcal{F}$ to denote that $f$ is estimated with the class of methods $\mathcal{F}$. 
 
-Let $\phi: \mathcal{D} \times \mathcal{X} \mapsto \mathbb{R}$ denote the statistic that quantifies the performance of the function $f$, such as predictive accuracy, mean squared error, or area under the receiver operating characteristic (ROC) curve (AUC). This is a function of both $f$ and $S$. We are interested in estimating $E_\mathcal{P}[\phi_f(S)]$, which is the expected error under the data generation mechanism, for a particular $f \in \mathcal{F}$. This allows us to understand how the signature will perform on future observations generated from $\mathcal{P}$. We may also be interested in estimating $E_\mathcal{P}[\phi_f(S)]$ *for all* $f \in \mathcal{F}$, which is the generalization error for $f$ generated using mechanism $\mathcal{F}$. This doesn't guide outside researchers as to which specific $f$ to use, yet it is useful for development because it tells us how much signal is in the data. As shorthand we will write this as $E_\mathcal{P}[\phi_\mathcal{F}(S)]$
+Let $\phi: \mathcal{D} \times \mathcal{X} \mapsto \mathbb{R}$ denote the statistic that quantifies the performance of the function $f$, such as predictive accuracy, mean squared error, or area under the receiver operating characteristic (ROC) curve (AUC). This could also be a measure of discrimination, such as an odds ratio, hazard ratio, or log-rank statistic. This is a function of both $f$ and $S$. We are interested in estimating $E_\mathcal{P}[\phi_f(S)]$, which is the expected error under the data generation mechanism, for a particular $f \in \mathcal{F}$. This allows us to understand how the signature will perform on future observations generated from $\mathcal{P}$. We may also be interested in estimating $E_\mathcal{P}[\phi_f(S)]$ *for all* $f \in \mathcal{F}$, which is the generalization error for $f$ generated using mechanism $\mathcal{F}$. This doesn't guide outside researchers as to which specific $f$ to use, yet it is useful for development because it tells us how much signal is in the data. As shorthand we will write this as $E_\mathcal{P}[\phi_\mathcal{F}(S)]$
 
 A signature that **reliably predicts** an outcome $Y$ is one that has generalization error small enough for the clinical context. Such a signature may be useful for treatment selection, prognosis, or other type of clinical management. 
 
@@ -54,16 +60,18 @@ The key point is that signatures are useful if they can correctly and reliably c
 
 In the development process it is important to evaluate both of these statistical concepts. Furthermore, it is not trivial to assess each of these in a valid manner when the data are used to define the signature itself. We illustrate the potential for bias, and remedies, in our examples. 
 
-@janes2011measuring, @janes2014approach,  @mcshane2013development, @polley2013statistical
+@janes2011measuring, @janes2014approach,  @mcshane2013development
 
 
 ## Data analysis example
 
 Throughout this paper, we reanalyze data from @zhu2010prognostic. Briefly, the data of interest are from the JBR.10 trial, which was a randomized controlled trial of adjuvant vinorelbine/cisplatin (ACT) versus observation alone (OBS) in 482 participants with non small cell lung cancer (NSCLC). Of those 482 participants, 169 had frozen tissue collected, and of those samples, 133 (71 in ACT and 62 in OBS) had gene-expression profiling done using U133A oligonucleotide microarrays (Affymetrix, Santa Clara, CA). 
 
-The goal of the @zhu2010prognostic paper was to identify a multi-gene signature that strongly predicts prognosis, and the hypothesis was that the poor prognosis subgroup would benefit more from ACT compared to the good prognosis subgroup. The signature was trained to predict disease specific survival. The annotated gene expression data and clinical information are available from the Gene Expression Omnibus (identifier: GSE14814, @edgar2002gene). Batch effects were removed using the ComBat function in the sva R package [@leeksva] and then the gene expression values were centered by their means and scaled by their standard deviations. We reproduce their analysis while illustrating the key issues under discussion. 
+The goal of the @zhu2010prognostic paper was to identify a multi-gene signature that strongly predicts prognosis, and the hypothesis was that the poor prognosis subgroup would benefit more from ACT compared to the good prognosis subgroup. The signature was trained to predict disease specific survival. The annotated gene expression data and clinical information are available from the Gene Expression Omnibus (identifier: GSE14814, @edgar2002gene). Batch effects were removed using the ComBat function in the sva R package [@leeksva] and then the gene expression values were centered by their means and scaled by their standard deviations. We expand on the main features of their analysis while illustrating the key issues under discussion. 
 
 The authors of @zhu2010prognostic present results that mainly focus on the discrimination ability of their estimated signature. They do that by demonstrating that the two risk subgroups predicted by their signature (high risk and low risk) have separation in their survival curves and that the hazard ratio for their signature is large and significant even when adjusting for other risk factors. They do not directly address calibration, that is, whether their signature accurately predicts survival times. 
+
+Our signature estimation approach is similar but not identical to that in @zhu2010prognostic. Following the processing steps described above, we performed a gene selection step wherein we fit univariate Cox regression models with disease specific survival as the outcome and each gene as the single predictor. Genes with univariate p-values less than 0.005 were selected for further analysis. Then, each gene was weighted by its univariate Cox regression coefficient, and the resulting weighted gene expression values summed to form risk scores. Genes were selected in a forward selection manner, starting with the most significant genes, the gene that improved the concordance between survival times and the risk score was selected. If no gene improved the concordance, the process was stopped. The final list of selected genes were all included in a multivariable Cox regression model to fit the final risk score. The cutoff that yielded the smallest log-rank statistic p-value was used to dichotomize into two risk groups. 
 
 
 # Issues
@@ -84,22 +92,24 @@ A traditional remedy to this problem of overfitting is the split sample approach
 
 Another approach to avoid overfitting is cross-validation, which is a resampling based approach. For a fixed integer $k$, which can be between 1 and $n$, we randomly select a partition of $k$ observations from $S$, denoted $S_k$. Then $f_{-k}$ is estimated and fixed by appling $\mathcal{F}$ on $S_{-k}$ which is the the subset of $S$ that is disjoint from $S_k$. Then, we get an estimate $\hat{E}[\phi_{f_{-k}}(S_k)]$ which is an unbiased estimate of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. This process is repeated $K$ times to yield $K$ estimates. Each of these estimates is unbiased, but noisy, because typically $k$ is very small relative to $n$. Thus, we average over $K$ to get a less noisy estimate. This process is called "leave $k$ out" cross-validation. Note that for each partition that is selected, we obtain a new estimate of $f$, therefore the estimator is an estimator only for $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. Typically, if a specific form for $f$ is desired, it would be estimated using the entire dataset $S$. 
 
-A variation on the cross-validation approach is bootstrapping. In that case, a sample $S_b$ of size $n$ is sampled _with replacement_ from $S$. Then $f_{b}$ is estimated and fixed by applying $\mathcal{F}$ to $S_{b}$. The error $\phi$ is estimated on the subset of $S$ that is disjoint from $S_b$: $S_{-b}$. This process is repeated $K$ times to yield $K$ estimates. These $K$ estimates are averaged to obtain the mean over the bootstrap replicates. @efron1997improvements suggest a variation, the 0.632 estimate: 
+A variation on the cross-validation approach is bootstrapping. In that case, a sample $S_b$ of size $n$ is sampled _with replacement_ from $S$. Then $f_{b}$ is estimated and fixed by applying $\mathcal{F}$ to $S_{b}$. The statistic $\phi$ is estimated on the subset of $S$ that is disjoint from $S_b$: $S_{-b}$. This process is repeated $K$ times to yield $K$ estimates. These $K$ estimates are averaged to obtain the mean over the bootstrap replicates. @efron1997improvements suggest a variation, the 0.632 estimate: 
 $$
 \hat{E}^*[\phi_{\mathcal{F}}(S)] = .368 \hat{E}[\phi_{f}(S)] + 0.632 \hat{E}[\phi_{f_b}(S_{-b})],
 $$
 where $\hat{E}[\phi_{f}(S)]$ is the naive estimate of $\phi_f$ using the entire dataset. 
 
-To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with $n$ samples, each with a binary outcome $Y$ with prevalence 0.3, and $d$ features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature estimation procedure entails a feature selection step, in which each feature is regressed against $Y$ in a logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines our final signature. 
+Another variation on all of these methods is the concept of pre-validation [@tibshirani2002pre]. With pre-validation, instead of computing the statistic $\phi$ for each of the held-out subsets ($S_{b}$ for the bootstrap or $S_{k}$ for cross-validation), the fitted predictor $\hat{f}(X_i)$ is estimated for $X_i \in S_{b}$ where $\hat{f}$ is estimated using $S_{-b}$. This process is repeated to obtain a set of pre-validated predictor estimates $\hat{f}$ which are then used to calculate $\phi$. For single-step holdout, this process is equivalent to what is described above. For cross-validation and the bootstrap, this process avoids the problem of having too few cases to estimate the statistic $\phi$ on the held-out dataset. 
 
-We compare each of the three methods described above along with the biased approaches of using the full sample to select the features, followed by either fitting the model on a split sample, or using fitting the full model inside the cross validation step. Note that @zhu2010prognostic used the latter approach, which explains the differences in our results. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. In our simulation, we look at two different statistics, classification accuracy to assess calibration and the odds ratio for the outcome comparing the signature groups to assess discrimination.
+## Simulation Study
+
+To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with $n$ samples, each with a binary outcome $Y$ with prevalence 0.3, and $d$ features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature estimation procedure entails a feature selection step, in which each feature is regressed against $Y$ in a univariate logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines our final signature. 
+
+We compare each of the methods described above along with the biased approaches of using the full sample to select the features, followed by either fitting the model on a split sample, or using fitting the full model inside the cross validation step. These are referred to as "partial holdout" and "partial CV" in the tables and figures. Note that @zhu2010prognostic used the latter approach, which explains the differences in our results. We also implemented the naive resubstitution approach, wherein the model is trained and evaluated on the same dataset, and the partial resubstitution approach wherein the model is trained on a holdout set and then evaluated on the combined complete dataset. The partial resubstitution approach is prevalent in the literature, such as the @zhu2010prognostic paper, wherein the model was trained on the one arm of the trial, and then the results were presented for the combined arms. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. In our simulation, we look at two different statistics, the area under the ROC curve (AUC) to assess calibration and the odds ratio for the outcome comparing the signature groups to assess discrimination.
 
 
-```{r cvsims}
+```{r cvsims, fig.cap = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) in the setting where a dataset is used to both define and evaluate the signature. The violin plots show mirrored density estimates for the AUC for 1000 replicates of the numerical experiment. The true value of the AUC is 0.5. CV = Cross validation. "}
 load("../Code/cvsim-result.RData")
 cvres <- do.call("rbind", cvsims)
-library(tidyr)
-
 cvlong <- do.call("rbind", lapply(1:ncol(cvres), function(i){
   
   cl <- cvres[, i]
@@ -111,29 +121,234 @@ cvlong <- do.call("rbind", lapply(1:ncol(cvres), function(i){
 }))
 
 ggplot(subset(cvlong, stat == "AUC"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") + 
-  theme_bw(base_size = 13, base_family = "serif") + 
-  scale_x_discrete("Estimation Approach", labels = c("Bootstrap", "Leave 10 out CV", "Leave 100 out CV", 
-                                                     "30% Holdout", "50% Holdout", "Resubstitution", "Partial CV", "Partial Holdout")) + 
+  theme_bw(base_size = 13, base_family = "serif") + coord_flip() + 
+  scale_x_discrete("Estimation Approach", labels = c("Bootstrap", "Leave 10 out CV", "Leave 100 out CV", "Pre-validation",
+                                                     "30% Holdout", "50% Holdout", "Resubstitution", 
+                                                     "Partial CV", "Partial Holdout", "Partial Resubstitution")) + 
   ylab("Area Under the ROC Curve")
 ```
 
 
-## Evaluating Calibration
+
+```{r cvsims2, fig.cap = "Comparison of different approaches to estimating the odds ratio (OR) for discrimination in the setting where a dataset is used to both define and evaluate the signature. The violin plots show mirrored density estimates for the OR for 1000 replicates of the numerical experiment. The true value of the OR is 1. CV = Cross validation. "}
+
+ggplot(subset(cvlong, stat == "OR"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") + 
+  theme_bw(base_size = 13, base_family = "serif") + coord_flip() + 
+  scale_x_discrete("Estimation Approach", labels = c("Bootstrap", "Leave 2% out CV", "Leave 10% out CV", "Pre-validation",
+                                                     "30% Holdout", "50% Holdout", "Resubstitution", 
+                                                     "Partial CV (2%)", "Partial Holdout", "Partial Resubstitution")) + 
+  ylab("Odds Ratio")
+```
 
 
-## Evaluating Discrimination and Clinical Benefit
+```{r cvtab}
+
+labs <- c(boot = "Bootstrap", cv.10 = "Leave 2% out CV", cv.100 = "Leave 10% out CV", 
+          cv.preval = "Pre-validation", 
+  holdout.3 = "30% Holdout", holdout.5 = "50% Holdout", naive = "Resubstitution", 
+  zhu.cv = "Partial CV (2%)", zhu.hold = "Partial Holdout", zhu.hold2 = "Partial Resubstitution")
+
+cvlong$Approach <- labs[cvlong$scen]
+cvlong$Truth <- ifelse(cvlong$stat == "AUC", .5, 1.0)
+cvlong$value[!is.finite(cvlong$value)] <- NA
+cvlong %>% group_by(stat, Approach) %>%
+  summarize(`mean` = mean(value, na.rm =TRUE), `std.dev` = sd(value, na.rm = TRUE), 
+            `Percent bias` = 100 * (mean(value - Truth[1], na.rm = TRUE))/Truth[1]) %>% 
+  kable(digits = 2, caption = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) and the odds ratio (OR) in the setting where a dataset is used to both define and evaluate the signature. The true value of the AUC is 0.5 and the true value of the OR is 1.0. Estimates are based on 1000 replicates of the numerical experiment. CV = Cross validation. ")
+
+```
 
 
-### Developing and validating a predictive biomarker for an effective treatment
+Not surprisingly, the resubstitution estimates are optimistically biased: the naive resubstitution estimate of the AUC is 44% larger than it should be and the OR estimate is over 2 times higher than it should be, on average. Partial versions of the resubstitution (including partial holdout, and partial cross-validation) estimates do not ameliorate the bias very much. Investigators often feel as though partial holdout estimates are close to valid, as only half of the data are used to form the estimates, however here we see that these versions are still severely biased and should not be reported as valid assessments of the validity of biomarker signatures. 
 
-Identify the non-responders and demonstrate that they do not benefit (hard)
+All of the proposed remedies to resubstitution bias are successful and are unbiased, with their mean AUCs being nearly 0.5 and the mean ORs being nearly 1. We can compare the spread of the distributions to get a sense of the differences in precision of the estimates. The bootstrap approach appears to be the most precise of the unbiased estimates, followed by the cross-validation, holdout, and finally the pre-validation. The bootstrap, as intended, is a more efficient, smoothed version of the cross validation estimate. It provides the best balance between allocating data to precisely train the signature and having independent data remaining to precisely estimate the statistic $\phi$.  
 
-### Developing and validating a predictive biomarker for an ineffective treatment
 
-Identify the responders and demonstrate that they do benefit (no quite as hard)
 
-# Conclusion
 
-What I said and how I said it.
+## Data Analysis
+
+```{r examp1}
+source("../Code/03-new-signature-zhu.R")
+```
+
+
+```{r exampresub, cache = TRUE}
+## substitution estimate using full dataset
+obsgrp <- subset(ldat, Post.Surgical.Treatment == "OBS")
+obsgrpw <- subset(gdat, Post.Surgical.Treatment == "OBS")
+fit.all <- fit.superpc(obsgrp, cldat)
+fitted <- predict.superpc(gdat, fit.all)
+
+evalall <- eval.predict(obsgrpw, fit.all)
+
+cldat[, "riskgrp"] <- fitted$riskgrp
+cldat$DSS <- as.numeric(cldat$DSS.status == "Dead")
+#ggplot(subset(cldat, Post.Surgical.Treatment == "OBS"), 
+#       aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km() + 
+#  theme_bw(base_size = 13, base_family = "serif") + 
+#  scale_linetype_discrete("Resubstitution", labels = c("Low risk", "High risk")) + 
+#  ylab("Disease Specific Survival") + xlab("Time in years since randomization")
+
+```
+
+The signature development procedure was described in the introduction. There is both a feature selection step, and a multivariable estimation step. This results in a continuous signature which is the linear predictor of a Cox regression model. The signature is dichotomized by selecting the cutoff that yields the most significant log-rank statistic for comparing the resulting risk groups. Calibration of the signature is assessed using the concordance statistic as implemented in the \texttt{survival} package in \texttt{R} [@survival]. To paraphrase the help file: this is defined as the probability of agreement for any two randomly chose observations, which in this case means that the observation with the shorter survival time also has the larger signature value. This is similar to an interpretation of the AUC for binary data. 
+
+First we fit the signature using the entire observation cohort (n = 62). The signature was then evaluated on the same dataset. The survival plot shows extreme separation between the two risk groups (HR = `r round(exp(evalall[2]))`, p < 0.001), consistent with the reported JBL.10 signature, and the estimated concordance is `r round(evalall[1], 2)`. After correctly accounting for the selection process, our estimates of calibration and discrimination are much less impressive.
+
+The second plot shows the survival curves for the two risk groups using the pre-validated estimates of the risk score. We partitioned the 62 observations into 8 groups of 6 and 2 groups of 7. Then for each group $b$, we fit the model using $S_{-b}$ and obtained prevalidated estimates for $S_{b}$. The survival curves plot the survival times for comparing risk groups using the prevalidated estimates. The separation is much less impressive although it is clear that there is some signal there. 
+
+```{r examppreval, cache = TRUE}
+set.seed(332)
+obssel <- unique(obsgrp$ID)
+# randomly reorder and select 8 groups of 6 and 2 groups of 7
+obssel <- obssel[sample(1:length(obssel), length(obssel), replace = FALSE)]
+sets <- c(rep(6, 8), 7, 7)
+scpet <- vector(mode = "list", length = 10)
+j <- 1
+for(i in 1:10){
+  scpet[[i]] <- obssel[j:(j + sets[i] - 1)]
+  j <- j + sets[i]
+}
+
+hat.f <- vector("list", 10)
+for(i in 1:10){
+  
+  obsgrpb <- subset(ldat, Post.Surgical.Treatment == "OBS" & ID %in% setdiff(obssel, scpet[[i]]))
+  obsgrpwb <- subset(gdat, Post.Surgical.Treatment == "OBS" & ID %in% scpet[[i]])
+  fit.b <- fit.superpc(obsgrpb, cldat)
+  hat.f[[i]] <- cbind(ID = scpet[[i]], as.data.frame(predict.superpc(obsgrpwb, fit.b)))
+
+}
+
+preval.dat <- merge(do.call("rbind", hat.f), cldat[, - which(colnames(cldat) %in% c("riskgrp", "lps"))], by = "ID", all.y = FALSE)
+
+# ggplot(preval.dat, 
+#        aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km() + 
+#   theme_bw(base_size = 13, base_family = "serif") + 
+#   scale_linetype_discrete("Prevalidated", labels = c("Low risk", "High risk")) + 
+#   ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization")
+```
+
+
+```{r examppresub, fig.height = 9}
+trtgrp <- subset(gdat, Post.Surgical.Treatment == "ACT")
+
+trt.dat <- merge(data.frame(ID = trtgrp$ID, lps = predict.superpc(trtgrp, fit.all)$lps, 
+                            riskgrp = predict.superpc(trtgrp, fit.all)$riskgrp), 
+                 cldat[, - which(colnames(cldat) %in% c("riskgrp", "lps"))], by = "ID", all.y = FALSE)
+
+preval.dat2 <- rbind(preval.dat, trt.dat)
+
+cldat.trtplot <- cldat
+cldat.trtplot$Post.Surgical.Treatment <- "Combined"
+cldat.trtplot <- rbind(cldat, cldat.trtplot)
+ggplot(cldat.trtplot, 
+       aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km() + geom_kmticks() + 
+  theme_bw(base_size = 13, base_family = "serif") + 
+  scale_linetype_discrete("Partial Resubstitution", labels = c("Low risk", "High risk")) + 
+  ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
+  facet_wrap(~ Post.Surgical.Treatment, ncol = 1)
+```
+
+```{r inter1}
+cldat.trtplot$Risk.fac <- factor(cldat.trtplot$riskgrp, levels = c(FALSE, TRUE), labels = c("Low risk", "High risk"))
+ggplot(subset(cldat.trtplot, Post.Surgical.Treatment != "Combined") , 
+       aes(time = DSS.time, status = DSS, linetype = Post.Surgical.Treatment)) + geom_km()+ geom_kmticks() + 
+  theme_bw(base_size = 13, base_family = "serif") + 
+  scale_linetype_discrete("Treatment") + 
+  ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
+  facet_wrap(~ Risk.fac)
+```
+
+```{r exampresub2, fig.height = 9}
+preval.dat2.trtplot <- preval.dat2
+preval.dat2.trtplot$Post.Surgical.Treatment <- "Combined"
+preval.dat2.trtplot <- rbind(preval.dat2, preval.dat2.trtplot)
+preval.dat2.trtplot$Risk.fac <- factor(preval.dat2.trtplot$riskgrp, levels = c(FALSE, TRUE), labels = c("Low risk", "High risk"))
+
+ggplot(preval.dat2.trtplot, 
+       aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km()+ geom_kmticks() + 
+  theme_bw(base_size = 13, base_family = "serif") + 
+  scale_linetype_discrete("Prevalidated", labels = c("Low risk", "High risk")) + 
+  ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
+  facet_wrap(~ Post.Surgical.Treatment, ncol = 1)
+```
+
+```{r inter}
+ggplot(subset(preval.dat2.trtplot, Post.Surgical.Treatment != "Combined") , 
+       aes(time = DSS.time, status = DSS, linetype = Post.Surgical.Treatment)) + geom_km()+ geom_kmticks() + 
+  theme_bw(base_size = 13, base_family = "serif") + 
+  scale_linetype_discrete("Treatment") + 
+  ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
+  facet_wrap(~ Risk.fac)
+```
+
+
+
+```{r multivar, results = "asis"}
+cldat$Stage2 <- cldat$Stage %in% c("2A", "2B", "II")
+fit.train <- coxph(Surv(DSS.time, DSS) ~ riskgrp + Sex + Stage2 + age + Histology.type, 
+                   data = subset(cldat, Post.Surgical.Treatment == "OBS"))
+
+fit.train.inter <- coxph(Surv(DSS.time, DSS) ~ riskgrp * Post.Surgical.Treatment + Sex + Stage2 + age + Histology.type, 
+                   data = cldat)
+
+preval.dat2$Stage2 <- preval.dat2$Stage %in% c("2A", "2B", "II")
+fit.preval <- coxph(Surv(DSS.time, DSS) ~ riskgrp + Sex + Stage2 + age + Histology.type, 
+                    data = subset(preval.dat2, Post.Surgical.Treatment == "OBS"))
+
+fit.preval.inter <- coxph(Surv(DSS.time, DSS) ~ riskgrp * Post.Surgical.Treatment + Sex + Stage2 + age + Histology.type,
+                          data = preval.dat2)
+
+pCI <- function(x) {
+  sprintf("%.1f to %.1f", x[1], x[2])
+}
+
+myP <- function(x){
+  ifelse(x < .001, "< 0.001", paste(round(x, 3)))
+}
+
+HRmary <- data.frame(Comparison = "High Risk vs Low Risk", `Hazard Ratio` = round(exp(fit.train$coefficients[1]), 1), 
+           `95% CI` = pCI(exp(confint(fit.train)[1, ])), `Adjusted p` = myP(summary(fit.train)$coefficients[1, 5]), 
+           check.names = FALSE, stringsAsFactors = FALSE)
+
+HRmary <- rbind(HRmary, c("Trt/Risk interaction", round(exp(fit.train.inter$coefficients[8]), 1), 
+                          pCI(exp(confint(fit.train.inter)[8, ])), 
+                          myP(summary(fit.train.inter)$coefficients[8, 5])))
+
+
+HRmary <- rbind(HRmary, c("High Risk vs Low Risk", round(exp(fit.preval$coefficients[1]), 1), 
+                          pCI(exp(confint(fit.preval)[1, ])), 
+                          myP(summary(fit.preval)$coefficients[1, 5])),
+                c("Trt/Risk interaction", round(exp(fit.preval.inter$coefficients[8]), 1), 
+                          pCI(exp(confint(fit.preval.inter)[8, ])), 
+                          myP(summary(fit.preval.inter)$coefficients[8, 5])))
+
+rownames(HRmary) <- NULL
+
+HRmary <- cbind(Method = c("**Partial Resubstitution**", "", "**Prevalidation**", ""), HRmary)
+kable(HRmary, caption = "Hazard ratios and 95% confidence intervals from separate Cox regression models that adjust for tumor histologic subtype, stages, age, and sex. Rows labeled 'High risk vs low risk' show the hazard ratio for the signature-based risk group comparison. The rows labeled 'Trt/Risk interaction' show the hazard ratio for the interaction term of treatment by signature-based risk group. The partial substitution estimates are dramatically optimistically biased. \\label{adjhr}")
+```
+
+
+The second plot shows the survival curves for the two risk groups using the pre-validated estimates of the risk score. We partitioned the 62 observations into 8 groups of 6 and 2 groups of 7. Then for each group $b$, we fit the model using $S_{-b}$ and obtained prevalidated estimates for $S_{b}$. The survival curves plot the survival times for comparing risk groups using the prevalidated estimates. The separation is much less impressive although it is clear that there is some signal there. The concordance between the prevalidated signature and the survival times is `r round(survConcordance(Surv(DSS.time, DSS) ~ lps, data = preval.dat)$concordance, 2)`, indicating much worse calibration. 
+
+We also show plots to assess the ability of the signature to be useful for treatment selection. These plots show the survival curves comparing treatment arms grouped in panels by the risk score. As described by @polley2013statistical, the idea is to determine whether the treatment is beneficial in one group and not benficial or harmful in another group, indicating that different treatment decisions would be made based on the signature. On one hand, the overfit signature shows dramatic differences in treatment efficacy between the low risk and high risk groups. In fact it appears that the treatment is harmful in the low risk group, but highly beneficial in the high risk group, a very rare finding. The prevalidated signature on the other hand, shows differences that are much less dramatic. It appears that the treatment is mildly beneficial in both groups, possibly to a higher degree in the high risk group. This suggests that the dramatic predictive value of the signature was merely an artifact of the overfitting process on the OBS arm, as pointed out by @simon2011re. 
+
+In a multivariable Cox model we observe similar trends when comparing the prevalidated signature to the overfit signature. We fit two regression models. In the first, the aim is to assess the prognostic value of the signature by estimating the hazard ratio for the high risk versus low risk groups, adjusted for tumor histologic subtype, stage, age, and sex. In the second model, the idea is to assess the predictive value of the signature by estimating the treatment by signature interaction effect, adjusting for the same clinical covariates. The results are reported in Table \ref{adjhr}. For the partial resubstitution approach, we find an extreme hazard ratio of nearly 40 for the prognostic effect, and a strong and significant treatment by signature interaction. Using the prevalidated signature, the effect estimates are much smaller and insignificant in comparison to the standard clinical features. These results are unimpressive and would not be considered promising for clinical use. 
+
+
+# Discussion
+
+All statistics, whether they assess calibration or discrimination or something else, are subject to bias due to overfitting. Remedies to this type of bias are well-studied in the statistical literature and here we have demonstrated how they can be implemented in a real scenario. Sadly, reports of strong associations with overfit biomarker signatures are all too common in the medical literature. The amount of bias that is possible is not known and can be difficult to decipher based on study reports. It is imperative that investigators and journal editors take overfitting bias seriously to ensure that signature estimates are valid. Unfortunately this often results in study reports that are far less optimistic than usual. 
+
+The @zhu2010prognostic paper used the approach of identifying a signature using the control arm of the trial, evaluating it using the combined control and treatment arms, and then hoping that the signature would be useful for treatment selection. This approach has been shown to be invalid [@simon2011re] for identifying a predictive signature, and indeed we show that the resubstitution aspect of the evaluation likely led to overstatments of the size of the signature effect. Properly doing cross-validation for estimating the calibration of the signature and doing pre-validation for assessment of the discrimination of the signature show that the associations are much more modest. 
+
+When we assess the signature on the independent treatment arm, we see that there is no significant difference between the risk groups. This raises the question of whether it is appropriate to use non-random splits of the dataset in order to obtain valid estimates of the calibration or discrimination. Instead of treatment arms, we could imagine a large multi-center study, and we could split the data into disjoint subgroups based on the center. Specifically, suppose we split the development dataset $S$ into $S_1$ and $S_2$ according to a discrete covariate $X$ that takes on levels 1 or 2. The we develop a signature $f_{S_1}$ using $S_1$ and evaluate it on $S_2$ by estimating $\hat{E}[\phi_{f_{S_1}}(S_2)]$. This is an estimate not of $E_\mathcal{P}[\phi_f(S)]$, but rather $E_{\mathcal{P}_2}[\phi_f(S)]$, where $\mathcal{P}_2$ is the distribution for the sub-population with $X = 2$ that $S_2$ is a sample from. This estimate would only be recommended if the signature is intended for use in that specific subpopulation, and if that were the case, then it doesn't make much sense to develop the signature using the subpopulation $\mathcal{P}_1$. If these groups differed substantially, then we would not expect the signature to perform adequately. The differences in performance may depend on many factors, including how $X$ is associated with the distribution of the features and the outcome. If a signature becomes broadly used in clinics, these center-to-center differences would be important to assess as a part of signature efficacy surveillance. 
+
+# Note
+
+All analysis code and the source files for this manuscript is available from the authors' webpage. 
 
 # References

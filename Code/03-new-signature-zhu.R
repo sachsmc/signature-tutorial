@@ -122,16 +122,6 @@ eval.predict <- function(dat0, las.fit){
 }
 
 
-## substitution estimate using full dataset
-
-fit.all <- fit.superpc(subset(ldat, Post.Surgical.Treatment == "OBS"), cldat)
-#fit.obs <- fit.superpc(ldat, cldat)
-fitted <- predict.superpc(subset(gdat, Post.Surgical.Treatment == "OBS"), fit.all)
-eval.predict(subset(gdat, Post.Surgical.Treatment == "OBS"), fit.all)
-
-
-
-## partial resubstitution
 
 
 
