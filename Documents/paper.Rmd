@@ -1,5 +1,5 @@
 ---
-title: "Issues in developing mulitvariable models for treatment selection"
+title: "Issues in developing multivariable models for treatment selection"
 author: "Michael C Sachs and Lisa M McShane"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output: 
@@ -10,6 +10,10 @@ geometry: margin=1in
 ---
 
 \linespread{2}
+
+# Abstract
+
+Omics technologies that generate a large amount of molecular data about biospecimens have the potential to provide information about a patient's disease characteristics above and beyond standard clinical and pathological features. By combining the information from a large amount of molecular features into a multivariable model, called a biomarker signature, there is the opportunity to identify distinct subgroups of patients for whom treatment decisions can be personalized. A biomarker signature can guide the decisions to treat or not to treat and help identify the patients who are most likely to survive. The key challenge is to combine features from a high dimensional molecular assay to derive a signature with good clinical performance and appropriately characterize its performance. The inappropriate practice of using overlapping data to both build a signature and evaluate its performance can lead to severe over-optimism bias in performance estimates. We summarize the key statistical issues and methods for developing and validating biomarker signatures, using examples from the literature to illustrate them. 
 
 # Introduction
 
@@ -30,7 +34,7 @@ knit_hooks$set(plot = function(x, options) {
 })
 ```
 
-Omics technologies that generate a large amount of molecular data about biospecimens have the potential to provide information about a patient's disease characteristics above and beyond standard clinical and pathological features. By combining the information from a large amount of molecular features into a multivariable model, hereafter referred to as a _biomarker signature_, there is the opportunity to identify distinct subgroups of patients for whom treatment decisions can be personalized. A multivariable biomarker can guide the decisions to treat or not to treat and help identify the patients who are most likely to survive. The key challenge we address in this paper is to estimate the precise combination of features from a high dimensional molecular assay suited to the clinical context. 
+Omics technologies that generate a large amount of molecular data about biospecimens have the potential to provide information about a patient's disease characteristics above and beyond standard clinical and pathological features. By combining the information from a large amount of molecular features into a multivariable model, hereafter referred to as a _biomarker signature_, there is the opportunity to identify distinct subgroups of patients for whom treatment decisions can be personalized. A multivariable biomarker can guide the decisions to treat or not to treat and help identify the patients who are most likely to survive. The key challenge we address in this paper is how to combine features from a high dimensional molecular assay to derive a signature that is fit for a specified clinical use and to provide valid estimates of performance characteristics. 
 
 ## Terminology and Notation
 
@@ -60,8 +64,6 @@ The key point is that signatures are useful if they can correctly and reliably c
 
 In the development process it is important to evaluate both of these statistical concepts. Furthermore, it is not trivial to assess each of these in a valid manner when the data are used to define the signature itself. We illustrate the potential for bias, and remedies, in our examples. 
 
-@janes2011measuring, @janes2014approach,  @mcshane2013development
-
 
 ## Data analysis example
 
@@ -82,8 +84,6 @@ In many cases during signature development, the statistic $\phi$ in question is 
 
 In @zhu2010prognostic, $\phi$ was the hazard ratio comparing the high risk and low risk groups as defined by the JBL.10 signature $f$. The risk groups were determined by the signature $f$, which was estimated using $S$ the same data that is then used to estimate the hazard ratio which is estimated to be 15. They go on to assess the discrimination of the JBL.10 signature in a series of independent data sets, in which they find hazard ratios around 2. We will reanalyze the dataset and illustrate some remedies for avoiding bias in determining the discrimination (an additionally the calibration) of this signature. 
 
-@altman2000we, @buyse2007towards, @moons2012riskI, @moons2012riskII
- 
 
 ## Remedies to Overfitting
 
@@ -119,42 +119,47 @@ cvlong <- do.call("rbind", lapply(1:ncol(cvres), function(i){
   data.frame(value = cvres[, i], stat = cls, scen = nm, stringsAsFactors = FALSE)
   
 }))
+cvlong$value[cvlong$stat == "OR"] <- exp(cvlong$value[cvlong$stat == "OR"])
+
+cvlong$scen <- factor(cvlong$scen, levels = c("naive", "zhu.cv", "zhu.hold", "zhu.hold2", 
+                                              "cv.preval", "cv.10", "cv.100", "holdout.3", 
+                                              "holdout.5", "boot"), ordered = TRUE)
+
+labs <- c("Resubstitution", "Partial CV", 
+  "Partial Holdout", "Partial Resubstitution", 
+  "Pre-validation", "Leave 10 out CV", "Leave 100 out CV", 
+  "30% Holdout", "50% Holdout", "Bootstrap")
+
+names(labs) <- levels(cvlong$scen)
 
 ggplot(subset(cvlong, stat == "AUC"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") + 
   theme_bw(base_size = 13, base_family = "serif") + coord_flip() + 
-  scale_x_discrete("Estimation Approach", labels = c("Bootstrap", "Leave 10 out CV", "Leave 100 out CV", "Pre-validation",
-                                                     "30% Holdout", "50% Holdout", "Resubstitution", 
-                                                     "Partial CV", "Partial Holdout", "Partial Resubstitution")) + 
+  scale_x_discrete("Estimation Approach", labels = labs) + 
   ylab("Area Under the ROC Curve")
 ```
 
 
 
-```{r cvsims2, fig.cap = "Comparison of different approaches to estimating the odds ratio (OR) for discrimination in the setting where a dataset is used to both define and evaluate the signature. The violin plots show mirrored density estimates for the OR for 1000 replicates of the numerical experiment. The true value of the OR is 1. CV = Cross validation. "}
+```{r cvsims2, fig.cap = "Comparison of different approaches to estimating the odds ratio (OR) for discrimination in the setting where a dataset is used to both define and evaluate the signature. The violin plots show mirrored density estimates for the log OR for 1000 replicates of the numerical experiment. The true value of the OR is 1. CV = Cross validation. "}
 
 ggplot(subset(cvlong, stat == "OR"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") + 
   theme_bw(base_size = 13, base_family = "serif") + coord_flip() + 
-  scale_x_discrete("Estimation Approach", labels = c("Bootstrap", "Leave 2% out CV", "Leave 10% out CV", "Pre-validation",
-                                                     "30% Holdout", "50% Holdout", "Resubstitution", 
-                                                     "Partial CV (2%)", "Partial Holdout", "Partial Resubstitution")) + 
-  ylab("Odds Ratio")
+  scale_x_discrete("Estimation Approach", labels = labs) + scale_y_log10(breaks = c(.5, 1, 2, 4)) +
+  ylab("Odds Ratio (log scale)")
 ```
 
 
 ```{r cvtab}
 
-labs <- c(boot = "Bootstrap", cv.10 = "Leave 2% out CV", cv.100 = "Leave 10% out CV", 
-          cv.preval = "Pre-validation", 
-  holdout.3 = "30% Holdout", holdout.5 = "50% Holdout", naive = "Resubstitution", 
-  zhu.cv = "Partial CV (2%)", zhu.hold = "Partial Holdout", zhu.hold2 = "Partial Resubstitution")
+cvlong$value[cvlong$stat == "OR"] <- log(cvlong$value[cvlong$stat == "OR"])
 
-cvlong$Approach <- labs[cvlong$scen]
-cvlong$Truth <- ifelse(cvlong$stat == "AUC", .5, 1.0)
+cvlong$Approach <- factor(labs[cvlong$scen], levels = labs, ordered = TRUE)
+cvlong$Truth <- ifelse(cvlong$stat == "AUC", .5, 0.0)
 cvlong$value[!is.finite(cvlong$value)] <- NA
 cvlong %>% group_by(stat, Approach) %>%
   summarize(`mean` = mean(value, na.rm =TRUE), `std.dev` = sd(value, na.rm = TRUE), 
-            `Percent bias` = 100 * (mean(value - Truth[1], na.rm = TRUE))/Truth[1]) %>% 
-  kable(digits = 2, caption = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) and the odds ratio (OR) in the setting where a dataset is used to both define and evaluate the signature. The true value of the AUC is 0.5 and the true value of the OR is 1.0. Estimates are based on 1000 replicates of the numerical experiment. CV = Cross validation. ")
+            `Bias` = mean(value - Truth[1], na.rm = TRUE)) %>%
+  kable(digits = 2, caption = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) and the log odds ratio (OR) in the setting where a dataset is used to both define and evaluate the signature. The true value of the AUC is 0.5 and the true value of the Log OR is 0.0. Estimates are based on 1000 replicates of the numerical experiment. CV = Cross validation. ")
 
 ```
 
@@ -338,6 +343,13 @@ We also show plots to assess the ability of the signature to be useful for treat
 
 In a multivariable Cox model we observe similar trends when comparing the prevalidated signature to the overfit signature. We fit two regression models. In the first, the aim is to assess the prognostic value of the signature by estimating the hazard ratio for the high risk versus low risk groups, adjusted for tumor histologic subtype, stage, age, and sex. In the second model, the idea is to assess the predictive value of the signature by estimating the treatment by signature interaction effect, adjusting for the same clinical covariates. The results are reported in Table \ref{adjhr}. For the partial resubstitution approach, we find an extreme hazard ratio of nearly 40 for the prognostic effect, and a strong and significant treatment by signature interaction. Using the prevalidated signature, the effect estimates are much smaller and insignificant in comparison to the standard clinical features. These results are unimpressive and would not be considered promising for clinical use. 
 
+## Additional Examples
+
+Examples of resubstitution estimates of performance are highly prevalent in the literature. @zhu2010prognostic was not unique in that sense, but rather they should be commended for their commitment to making their data, methods, and analysis code publically available, which allowed us to reproduce and reanalyze their study. More often, the methods are obfuscated through vague and non-standard descriptions, short methods sections, and hidden data analysis code. Most of the time, a resubstitution analysis can be discovered only through a very careful scrutiny of the methods and supplementary materials, if at all. Here we give some additional examples. 
+
+@van2002gene used gene expression measurements to develop a signature and predict clinical outcome of patients with axillary lymph node-negative breast cancer (metastatic disease within 5 years versus disease-free at 5 years). The signature was developed using a stepwise selection and classification procedure, in which a subset of the genes was first selected using all of the subjects, then further subsets were selected using cross-validation until they arrived at a 70 gene signature. This is the classic form of the partial cross-validation as we've described above. The resubstitution estimate of the odds ratio to develop distant metastasis within 5-years was estimated to be 28, with $p < 0.0001$. A later study of a similar population used similar gene expression profiling approach, but with a valid split sample holdout validation approach [@wang2005gene]. A univariate analysis of the locked-down signature evaluated on the holdout set gave a much more conservative odds ratio estimate of 5.7 for distant metastasis within 5 years.
+
+@zhang2001recursive describe a tree-based partitioning approach to use gene expression data to classify specimens as either cancer or normal tissue. Again, from a large number of candidate genes, a subset of three genes is identified using the entire set of 48 tissue specimens. Then, the cutoff values for the classifications are re-estimated using cross validation. This is yet again the classic form of partial cross validation that we have shown to be biased, contrary to their reports of "unbiased" estimates of 6-8% missclassification rates. This key detail of the analysis is only briefly described in the results section. 
 
 # Discussion
 
