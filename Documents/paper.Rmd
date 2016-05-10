@@ -4,8 +4,10 @@ author: "Michael C Sachs and Lisa M McShane"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output: 
     pdf_document:
+      citation_package: natbib
+      keep_tex: yes
       fig_caption: yes
-      pandoc_args: ["--bibliography", "bookchapter-1.bib"]
+      pandoc_args: ["--bibliography", "paper.bib"]
 fontsize: 12pt
 geometry: margin=1in
 ---
@@ -23,7 +25,6 @@ library(knitr)
 library(survival)
 library(ggkm)
 library(tidyr)
-
 
 opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE, warning = FALSE)
 knit_hooks$set(plot = function(x, options) {
@@ -103,13 +104,11 @@ Another variation on all of these methods is the concept of pre-validation [@tib
 
 ## Simulation Study
 
-To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with 1000 observations, each with a binary outcome $Y$ with prevalence 0.3, and 500 features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature development procedure entails a feature selection step, in which each feature is regressed against $Y$ in a univariate logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines the final signature. 
-
-We compare each of the methods described above, split-sample holdout, cross-validation, bootstrap, and pre-validation, along with several commonly used but biased approaches. All of the approaches are described in \ref{descript}. Two of the biased approaches use the full sample to select the features, followed by fitting the multivariable model on the holdout subset. This is referred to as "parital holdout" or "partial CV" when using split-sample holdout or cross-validation as the validation step, respectively. We also implemented the naive resubstitution approach, wherein the model is trained and evaluated on the same dataset, and the partial resubstitution approach wherein the model is trained on a holdout set and then evaluated on the combined complete dataset. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. In our simulation, we look at two different performance metrics, the area under the ROC curve (AUC) and the odds ratio for the outcome comparing the signature groups.
 
 \begin{table}
+\caption{Description of various commonly used but biased approaches to signature performance evaluation. This are used for illustration in the simulations. \label{descript} }
 \begin{center}
-\begin{tabular}[ht]{l|p{3in}}
+\begin{tabular}[!ht]{l|p{3in}}
 Name & Description \\
 \hline
 Partial Holdout & Select features on full dataset $S$. Split data into $S_t$ and $S_h$. Build model on $S_t$ using only features pre-selected from full dataset $S$. Then test that model on $S_h$ \\
@@ -118,8 +117,12 @@ Naive Resubstitution & Select features on full dataset $S$ and build model on $S
 Partial Resubstitution & Split data into $S_t$ and $S_h$. Select features on $S_t$. Build model on $S_t$ using only features pre-selected from $S_t$. Then test that model on the full dataset $S$. \\
 \end{tabular}
 \end{center}
-\caption{Description of various commonly used but biased approaches to signature performance evaluation. This are used for illustration in the simulations. \label{descript} }
 \end{table}
+
+
+To illustrate the different properties of these estimates and how they deal with overfitting, we conduct a simulation study. Data were generated with 1000 observations, each with a binary outcome $Y$ with prevalence 0.3, and 500 features sampled from the standard normal distribution. This is the null case where no features are associated with $Y$. The signature development procedure entails a feature selection step, in which each feature is regressed against $Y$ in a univariate logistic regression model. The 25 features with the smallest p-values are selected for inclusion in a multivariable logistic regression model which defines the final signature. 
+
+We compare each of the methods described above, split-sample holdout, cross-validation, bootstrap, and pre-validation, along with several commonly used but biased approaches. All of the approaches are described in \ref{descript}. Two of the biased approaches use the full sample to select the features, followed by fitting the multivariable model on the holdout subset. This is referred to as "parital holdout" or "partial CV" when using split-sample holdout or cross-validation as the validation step, respectively. We also implemented the naive resubstitution approach, wherein the model is trained and evaluated on the same dataset, and the partial resubstitution approach wherein the model is trained on a holdout set and then evaluated on the combined complete dataset. Our main interest is in comparing the bias and variance of the resulting estimates of $E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]$. In our simulation, we look at two different performance metrics, the area under the ROC curve (AUC) and the odds ratio for the outcome comparing the signature groups.
 
 ```{r cvsims, fig.cap = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) in the setting where a dataset is used to both develop the signature and evaluate its performance. The violin plots show mirrored density estimates for the AUC for 1000 replicates of the numerical experiment. In each replicate, there are 1000 observations and 500 features. The true value of the AUC is 0.5. CV = Cross validation. \\label{fig1}"}
 load("../Code/cvsim-result.RData")
@@ -179,7 +182,7 @@ colnames(cvwide2) <- gsub(".x", " AUC", colnames(cvwide2))
 colnames(cvwide2) <- gsub(".y", " OR", colnames(cvwide2))
 
 cvwide2 %>%
-  kable(digits = 2, caption = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) and the log odds ratio (OR) in the setting where a dataset is used to both develop the signature and evaluate its performance. The true value of the AUC is 0.5 and the true value of the Log OR is 0.0. Estimates are based on 1000 replicates of the numerical experiment. In each replicate, there are 1000 observations and 500 features. CV = Cross validation. ", booktabs = TRUE)
+  kable(digits = 2, caption = "Comparison of different approaches to estimating the Area Under the ROC Curve (AUC) and the log odds ratio (OR) in the setting where a dataset is used to both develop the signature and evaluate its performance. The true value of the AUC is 0.5 and the true value of the Log OR is 0.0. Estimates are based on 1000 replicates of the numerical experiment. In each replicate, there are 1000 observations and 500 features. CV = Cross validation. ")
 
 ```
 
@@ -217,11 +220,9 @@ cldat$DSS <- as.numeric(cldat$DSS.status == "Dead")
 
 ```
 
-The signature development procedure was described in the introduction. There is both a feature selection step, and a multivariable estimation step. This results in a continuous signature which is the linear predictor of a Cox regression model. The signature is dichotomized by selecting the cutoff that yields the most significant log-rank statistic for comparing the resulting risk groups. Calibration of the signature is assessed using the concordance statistic as implemented in the \texttt{survival} package in \texttt{R} [@survival]. To paraphrase the help file: this is defined as the probability of agreement for any two randomly chose observations, which in this case means that the observation with the shorter survival time also has the larger signature value. This is similar to an interpretation of the AUC for binary data. 
+The signature development procedure was described in the introduction. There is both a feature selection step, and a multivariable estimation step. This results in a continuous signature which is the linear predictor of a Cox regression model. The signature is dichotomized by selecting the cutoff that yields the most significant log-rank statistic for comparing the resulting risk groups. Discrimination of the signature is assessed using the concordance statistic as implemented in the \texttt{survival} package in \texttt{R} [@survival]. To paraphrase the help file: this is defined as the probability of agreement for any two randomly chosen observations, which in this case means that the observation with the shorter survival time also has the larger signature value. This is similar to an interpretation of the AUC for binary data. 
 
-First we fit the signature using the entire observation cohort (n = 62). The signature was then evaluated on the same dataset. The survival plot shows extreme separation between the two risk groups (HR = `r round(exp(evalall[2]))`, p < 0.001), consistent with the reported JBL.10 signature, and the estimated concordance is `r round(evalall[1], 2)`. After correctly accounting for the selection process, our estimates of calibration and discrimination are much less impressive.
-
-The second plot shows the survival curves for the two risk groups using the pre-validated estimates of the risk score. We partitioned the 62 observations into 8 groups of 6 and 2 groups of 7. Then for each group $b$, we fit the model using $S_{-b}$ and obtained prevalidated estimates for $S_{b}$. The survival curves plot the survival times for comparing risk groups using the prevalidated estimates. The separation is much less impressive although it is clear that there is some signal there. 
+First we fit the signature using the entire observation cohort (n = 62). The signature was then evaluated on the same dataset. The survival plot on the left side of Figure \ref{fig2} shows extreme separation between the two risk groups (HR = `r round(exp(evalall[2]))`, p < 0.001), consistent with the reported JBL.10 signature, and the estimated concordance is `r round(evalall[1], 2)`. After correctly accounting for the selection process, our estimates of association and discrimination are much less impressive.
 
 ```{r examppreval, cache = TRUE}
 set.seed(332)
@@ -256,7 +257,11 @@ preval.dat <- merge(do.call("rbind", hat.f), cldat[, - which(colnames(cldat) %in
 ```
 
 
-```{r examppresub, fig.height = 9}
+The right plot in Figure \ref{fig2} shows the survival curves for the two risk groups using the pre-validated estimates of the risk score. We partitioned the 62 observations into 8 groups of 6 and 2 groups of 7. Then for each group $b$, we fit the model using $S_{-b}$ and obtained prevalidated estimates for $S_{b}$. The survival curves plot the survival times for comparing risk groups using the prevalidated estimates. The separation is much less impressive. The concordance between the prevalidated signature and the survival times is `r round(survConcordance(Surv(DSS.time, DSS) ~ lps, data = preval.dat)$concordance, 2)`, indicating much worse discrimination. 
+
+
+
+```{r examppresub, fig.height = 6.5, fig.width = 8, fig.cap = "Comparison of survival by gene expression based risk signature. The left plot shows the resubstitution estimate, while the right plot shows the pre-validated estimate. \\label{fig2}"}
 trtgrp <- subset(gdat, Post.Surgical.Treatment == "ACT")
 
 trt.dat <- merge(data.frame(ID = trtgrp$ID, lps = predict.superpc(trtgrp, fit.all)$lps, 
@@ -268,45 +273,68 @@ preval.dat2 <- rbind(preval.dat, trt.dat)
 cldat.trtplot <- cldat
 cldat.trtplot$Post.Surgical.Treatment <- "Combined"
 cldat.trtplot <- rbind(cldat, cldat.trtplot)
-ggplot(cldat.trtplot, 
-       aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km() + geom_kmticks() + 
-  theme_bw(base_size = 13, base_family = "serif") + 
-  scale_linetype_discrete("Partial Resubstitution", labels = c("Low risk", "High risk")) + 
-  ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
-  facet_wrap(~ Post.Surgical.Treatment, ncol = 1)
-```
 
-```{r inter1}
-cldat.trtplot$Risk.fac <- factor(cldat.trtplot$riskgrp, levels = c(FALSE, TRUE), labels = c("Low risk", "High risk"))
-ggplot(subset(cldat.trtplot, Post.Surgical.Treatment != "Combined") , 
-       aes(time = DSS.time, status = DSS, linetype = Post.Surgical.Treatment)) + geom_km()+ geom_kmticks() + 
-  theme_bw(base_size = 13, base_family = "serif") + 
-  scale_linetype_discrete("Treatment") + 
-  ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
-  facet_wrap(~ Risk.fac)
-```
+row1 <- subset(cldat.trtplot, Post.Surgical.Treatment == "OBS")
 
-```{r exampresub2, fig.height = 9}
 preval.dat2.trtplot <- preval.dat2
 preval.dat2.trtplot$Post.Surgical.Treatment <- "Combined"
 preval.dat2.trtplot <- rbind(preval.dat2, preval.dat2.trtplot)
 preval.dat2.trtplot$Risk.fac <- factor(preval.dat2.trtplot$riskgrp, levels = c(FALSE, TRUE), labels = c("Low risk", "High risk"))
 
-ggplot(preval.dat2.trtplot, 
-       aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km()+ geom_kmticks() + 
+row2 <- subset(preval.dat2.trtplot, Post.Surgical.Treatment == "OBS")
+row1$Set <- "Resubstitution"
+row2$Set <- "Pre-validation"
+
+rows <- bind_rows(row1, row2)
+rows$Set <- factor(rows$Set, levels = c("Resubstitution", "Pre-validation"), ordered = TRUE)
+
+ggplot(rows, aes(time = DSS.time, status = DSS, linetype = riskgrp)) + geom_km() + geom_kmticks() + 
   theme_bw(base_size = 13, base_family = "serif") + 
-  scale_linetype_discrete("Prevalidated", labels = c("Low risk", "High risk")) + 
+  scale_linetype_discrete("Signature Group: ", labels = c("Low risk", "High risk")) + 
   ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
-  facet_wrap(~ Post.Surgical.Treatment, ncol = 1)
+  facet_wrap(~ Set, ncol = 2) + theme(legend.position = "bottom")
 ```
 
-```{r inter}
-ggplot(subset(preval.dat2.trtplot, Post.Surgical.Treatment != "Combined") , 
-       aes(time = DSS.time, status = DSS, linetype = Post.Surgical.Treatment)) + geom_km()+ geom_kmticks() + 
+```{r inter1, fig.height = 9, fig.width = 7.5, fig.cap = "Survival curves comparing the treatment effect by gene expression signature risk group. The top set of plots shows the partial resubstitution based signature and the bottom row shows the pre-validated signature estimates. \\label{fig3}"}
+cldat.trtplot$Risk.fac <- factor(cldat.trtplot$riskgrp, levels = c(FALSE, TRUE), labels = c("Low risk", "High risk"))
+
+library(gtable)
+library(grid)
+
+inter1 <- subset(cldat.trtplot, Post.Surgical.Treatment != "Combined") 
+inter2 <- subset(preval.dat2.trtplot, Post.Surgical.Treatment != "Combined") 
+inter1$Set <- "Resubstitution"
+inter2$Set <- "Pre-validation"
+
+inters <- bind_rows(inter1, inter2)
+inters$Set <- factor(inters$Set, levels = c("Resubstitution", "Pre-validation"), ordered = TRUE)
+
+p1 <- ggplot(inters, aes(time = DSS.time, status = DSS, linetype = Post.Surgical.Treatment)) + geom_km()+ geom_kmticks() + 
   theme_bw(base_size = 13, base_family = "serif") + 
   scale_linetype_discrete("Treatment") + 
   ylab("Disease Specific Survival") + ylim(0, 1) + xlab("Time in years since randomization") + 
-  facet_wrap(~ Risk.fac)
+  facet_grid( Set ~ Risk.fac)  + theme(strip.text.y = element_text(angle = 0))
+
+gt <- ggplotGrob(p1)
+# Get the positions of the panels in the layout: t = top, l = left, ...
+panels <-c(subset(gt$layout, name == "panel", select = t:r))
+
+# Add a row below the x-axis tick mark labels,
+# the same height as the strip
+gt <- gtable_add_rows(gt, gt$heights[3], 3)
+gt <- gtable_add_rows(gt, gt$heights[3], 6)
+
+# Get the strip grob
+stripGrob = gtable_filter(gt, "strip-right")
+
+# Insert the strip grob into the new row
+gt = gtable_add_grob(gt, stripGrob[[1]][[1]], t = 4, l = min(panels$l), r = max(panels$r))
+gt = gtable_add_grob(gt, stripGrob[[1]][[2]], t = 7, l = min(panels$l), r = max(panels$r))
+# remove the old strip
+gt = gt[, -(max(panels$r) + 1)]
+
+grid.newpage()
+grid.draw(gt)
 ```
 
 
@@ -352,16 +380,16 @@ HRmary <- rbind(HRmary, c("High Risk vs Low Risk", round(exp(fit.preval$coeffici
 
 rownames(HRmary) <- NULL
 
+
 HRmary <- cbind(Method = c("**Partial Resubstitution**", "", "**Prevalidation**", ""), HRmary)
 kable(HRmary, caption = "Hazard ratios and 95% confidence intervals from separate Cox regression models that adjust for tumor histologic subtype, stages, age, and sex. Rows labeled 'High risk vs low risk' show the hazard ratio for the signature-based risk group comparison. The rows labeled 'Trt/Risk interaction' show the hazard ratio for the interaction term of treatment by signature-based risk group. The partial substitution estimates are dramatically optimistically biased. \\label{adjhr}")
 ```
 
 
-The second plot shows the survival curves for the two risk groups using the pre-validated estimates of the risk score. We partitioned the 62 observations into 8 groups of 6 and 2 groups of 7. Then for each group $b$, we fit the model using $S_{-b}$ and obtained prevalidated estimates for $S_{b}$. The survival curves plot the survival times for comparing risk groups using the prevalidated estimates. The separation is much less impressive although it is clear that there is some signal there. The concordance between the prevalidated signature and the survival times is `r round(survConcordance(Surv(DSS.time, DSS) ~ lps, data = preval.dat)$concordance, 2)`, indicating much worse calibration. 
 
-We also show plots to assess the ability of the signature to be useful for treatment selection. These plots show the survival curves comparing treatment arms grouped in panels by the risk score. As described by @polley2013statistical, the idea is to determine whether the treatment is beneficial in one group and not benficial or harmful in another group, indicating that different treatment decisions would be made based on the signature. On one hand, the overfit signature shows dramatic differences in treatment efficacy between the low risk and high risk groups. In fact it appears that the treatment is harmful in the low risk group, but highly beneficial in the high risk group, a very rare finding. The prevalidated signature on the other hand, shows differences that are much less dramatic. It appears that the treatment is mildly beneficial in both groups, possibly to a higher degree in the high risk group. This suggests that the dramatic predictive value of the signature was merely an artifact of the overfitting process on the OBS arm, as pointed out by @simon2011re. 
+We also show plots to assess the ability of the signature to be useful for treatment selection (Figure \ref{fig3}). These plots show the survival curves comparing treatment arms grouped in panels by the risk score. As described by @polley2013statistical, the idea is to determine whether the treatment is beneficial in one group and not benficial or harmful in another group, indicating that different treatment decisions would be made based on the signature. On one hand, the overfit signature shows dramatic differences in treatment efficacy between the low risk and high risk groups. In fact it appears that the treatment is harmful in the low risk group, but highly beneficial in the high risk group, a very rare finding. The prevalidated signature on the other hand, shows differences that are much less dramatic. It appears that the treatment is mildly beneficial in both groups, possibly to a higher degree in the high risk group. This suggests that the dramatic predictive value of the signature was merely an artifact of the overfitting process on the OBS arm, as pointed out by @simon2011re. 
 
-In a multivariable Cox model we observe similar trends when comparing the prevalidated signature to the overfit signature. We fit two regression models. In the first, the aim is to assess the prognostic value of the signature by estimating the hazard ratio for the high risk versus low risk groups, adjusted for tumor histologic subtype, stage, age, and sex. In the second model, the idea is to assess the predictive value of the signature by estimating the treatment by signature interaction effect, adjusting for the same clinical covariates. The results are reported in Table \ref{adjhr}. For the partial resubstitution approach, we find an extreme hazard ratio of nearly 40 for the prognostic effect, and a strong and significant treatment by signature interaction. Using the prevalidated signature, the effect estimates are much smaller and insignificant in comparison to the standard clinical features. These results are unimpressive and would not be considered promising for clinical use. 
+In a multivariable Cox model we observe similar trends when comparing the prevalidated signature to the overfit signature. We fit two regression models. In the first, the aim is to assess the prognostic value of the signature by estimating the hazard ratio for the high risk versus low risk groups, adjusted for tumor histologic subtype, stage, age, and sex. In the second model, the idea is to assess the predictive value of the signature by estimating the treatment by signature interaction effect, adjusting for the same clinical covariates. The results are reported in Table \ref{adjhr}. For the partial resubstitution approach, we find an extreme hazard ratio of nearly 40 for the prognostic effect, and a strong and significant treatment by signature interaction. Using the prevalidated signature, the effect estimates are much smaller and insignificant in comparison to the standard clinical features. Note that the inference from the pre-validated model is not exactly correct either, because the procedure induces a correlation among the observations. Despite this, these results are unimpressive and would not be considered promising for clinical use. 
 
 ## Additional Examples
 
