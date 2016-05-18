@@ -440,12 +440,12 @@ regression model which defines the final signature.
 
 We compare each of the methods described above, split-sample holdout,
 cross-validation, bootstrap, and pre-validation, along with several
-commonly used but biased approaches. All of the approaches are described
-in \ref{descript}. Two of the biased approaches use the full sample to
-select the features, followed by fitting the multivariable model on the
-holdout subset. This is referred to as ``parital holdout'' or ``partial
-CV'' when using split-sample holdout or cross-validation as the
-validation step, respectively. We also implemented the naive
+commonly used but biased approaches. The biased approaches are described
+in Table \ref{descript}. Two of the biased approaches use the full
+sample to select the features, followed by fitting the multivariable
+model on the holdout subset. This is referred to as ``parital holdout''
+or ``partial CV'' when using split-sample holdout or cross-validation as
+the validation step, respectively. We also implemented the naive
 resubstitution approach, wherein the model is trained and evaluated on
 the same dataset, and the partial resubstitution approach wherein the
 model is trained on a holdout set and then evaluated on the combined

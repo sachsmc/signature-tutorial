@@ -1,0 +1,148 @@
+\begin{thebibliography}{18}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Dobbin and Simon(2011)]{dobbin2011optimally}
+Kevin~K Dobbin and Richard~M Simon.
+\newblock Optimally splitting cases for training and testing high dimensional
+  classifiers.
+\newblock \emph{BMC medical genomics}, 4\penalty0 (1):\penalty0 31, 2011.
+
+\bibitem[Edgar et~al.(2002)Edgar, Domrachev, and Lash]{edgar2002gene}
+Ron Edgar, Michael Domrachev, and Alex~E Lash.
+\newblock Gene expression omnibus: Ncbi gene expression and hybridization array
+  data repository.
+\newblock \emph{Nucleic acids research}, 30\penalty0 (1):\penalty0 207--210,
+  2002.
+
+\bibitem[Efron and Tibshirani(1997)]{efron1997improvements}
+Bradley Efron and Robert Tibshirani.
+\newblock Improvements on cross-validation: the 632+ bootstrap method.
+\newblock \emph{Journal of the American Statistical Association}, 92\penalty0
+  (438):\penalty0 548--560, 1997.
+
+\bibitem[Hastie et~al.(2009)Hastie, Friedman, and
+  Tibshirani]{hastie2009elements}
+T~Hastie, J~Friedman, and R~Tibshirani.
+\newblock \emph{The elements of statistical learning}, volume~2.
+\newblock Springer, 2009.
+
+\bibitem[Leek et~al.(2016)Leek, Johnson, Parker, Fertig, Jaffe, and
+  Storey]{leeksva}
+JT~Leek, WE~Johnson, HS~Parker, EJ~Fertig, AE~Jaffe, and JD~Storey.
+\newblock sva: Surrogate variable analysis. r package version 3.18.0, 2016.
+
+\bibitem[Moons et~al.(2012)Moons, Kengne, Woodward, Royston, Vergouwe, Altman,
+  and Grobbee]{moons2012riskI}
+Karel~GM Moons, Andre~Pascal Kengne, Mark Woodward, Patrick Royston, Yvonne
+  Vergouwe, Douglas~G Altman, and Diederick~E Grobbee.
+\newblock Risk prediction models: I. development, internal validation, and
+  assessing the incremental value of a new (bio) marker.
+\newblock \emph{Heart}, 98\penalty0 (9):\penalty0 683--690, 2012.
+
+\bibitem[Nielsen et~al.(2010)Nielsen, Parker, Leung, Voduc, Ebbert, Vickery,
+  Davies, Snider, Stijleman, Reed, et~al.]{nielsen2010comparison}
+Torsten~O Nielsen, Joel~S Parker, Samuel Leung, David Voduc, Mark Ebbert, Tammi
+  Vickery, Sherri~R Davies, Jacqueline Snider, Inge~J Stijleman, Jerry Reed,
+  et~al.
+\newblock A comparison of pam50 intrinsic subtyping with immunohistochemistry
+  and clinical prognostic factors in tamoxifen-treated estrogen
+  receptor--positive breast cancer.
+\newblock \emph{Clinical Cancer Research}, 16\penalty0 (21):\penalty0
+  5222--5232, 2010.
+
+\bibitem[Paik et~al.(2004)Paik, Shak, Tang, Kim, Baker, Cronin, Baehner,
+  Walker, Watson, Park, et~al.]{paik2004multigene}
+Soonmyung Paik, Steven Shak, Gong Tang, Chungyeul Kim, Joffre Baker, Maureen
+  Cronin, Frederick~L Baehner, Michael~G Walker, Drew Watson, Taesung Park,
+  et~al.
+\newblock A multigene assay to predict recurrence of tamoxifen-treated,
+  node-negative breast cancer.
+\newblock \emph{New England Journal of Medicine}, 351\penalty0 (27):\penalty0
+  2817--2826, 2004.
+
+\bibitem[Parker et~al.(2009)Parker, Mullins, Cheang, Leung, Voduc, Vickery,
+  Davies, Fauron, He, Hu, et~al.]{parker2009supervised}
+Joel~S Parker, Michael Mullins, Maggie~CU Cheang, Samuel Leung, David Voduc,
+  Tammi Vickery, Sherri Davies, Christiane Fauron, Xiaping He, Zhiyuan Hu,
+  et~al.
+\newblock Supervised risk predictor of breast cancer based on intrinsic
+  subtypes.
+\newblock \emph{Journal of clinical oncology}, 27\penalty0 (8):\penalty0
+  1160--1167, 2009.
+
+\bibitem[Pepe et~al.(2004)Pepe, Janes, Longton, Leisenring, and
+  Newcomb]{pepe2004limitations}
+Margaret~Sullivan Pepe, Holly Janes, Gary Longton, Wendy Leisenring, and Polly
+  Newcomb.
+\newblock Limitations of the odds ratio in gauging the performance of a
+  diagnostic, prognostic, or screening marker.
+\newblock \emph{American journal of epidemiology}, 159\penalty0 (9):\penalty0
+  882--890, 2004.
+
+\bibitem[Polley et~al.(2013)Polley, Freidlin, Korn, Conley, Abrams, and
+  McShane]{polley2013statistical}
+Mei-Yin~C Polley, Boris Freidlin, Edward~L Korn, Barbara~A Conley, Jeffrey~S
+  Abrams, and Lisa~M McShane.
+\newblock Statistical and practical considerations for clinical evaluation of
+  predictive biomarkers.
+\newblock \emph{J. Natl. Cancer Inst.}, 105\penalty0 (22):\penalty0 1677--1683,
+  2013.
+
+\bibitem[Simon and Freidlin(2011)]{simon2011re}
+Richard~M Simon and Boris Freidlin.
+\newblock Re: Designing a randomized clinical trial to evaluate personalized
+  medicine: A new approach based on risk prediction.
+\newblock \emph{Journal of the National Cancer Institute}, 103\penalty0
+  (5):\penalty0 445--445, 2011.
+
+\bibitem[Therneau(2015)]{survival}
+T~Therneau.
+\newblock \emph{A Package for Survival Analysis in S}.
+\newblock URL: http://CRAN.R-project.org/package=survival, version 2.38
+  edition, 2015.
+
+\bibitem[Tibshirani and Efron(2002)]{tibshirani2002pre}
+Robert~J Tibshirani and Brad Efron.
+\newblock Pre-validation and inference in microarrays.
+\newblock \emph{Statistical applications in genetics and molecular biology},
+  1\penalty0 (1):\penalty0 1--18, 2002.
+
+\bibitem[Van't~Veer et~al.(2002)Van't~Veer, Dai, Van De~Vijver, He, Hart, Mao,
+  Peterse, van~der Kooy, Marton, Witteveen, et~al.]{van2002gene}
+Laura~J Van't~Veer, Hongyue Dai, Marc~J Van De~Vijver, Yudong~D He,
+  Augustinus~AM Hart, Mao Mao, Hans~L Peterse, Karin van~der Kooy, Matthew~J
+  Marton, Anke~T Witteveen, et~al.
+\newblock Gene expression profiling predicts clinical outcome of breast cancer.
+\newblock \emph{nature}, 415\penalty0 (6871):\penalty0 530--536, 2002.
+
+\bibitem[Wang et~al.(2005)Wang, Klijn, Zhang, Sieuwerts, Look, Yang, Talantov,
+  Timmermans, Meijer-van Gelder, Yu, et~al.]{wang2005gene}
+Yixin Wang, Jan~GM Klijn, Yi~Zhang, Anieta~M Sieuwerts, Maxime~P Look, Fei
+  Yang, Dmitri Talantov, Mieke Timmermans, Marion~E Meijer-van Gelder, Jack Yu,
+  et~al.
+\newblock Gene-expression profiles to predict distant metastasis of
+  lymph-node-negative primary breast cancer.
+\newblock \emph{The Lancet}, 365\penalty0 (9460):\penalty0 671--679, 2005.
+
+\bibitem[Zhang et~al.(2001)Zhang, Yu, Singer, and Xiong]{zhang2001recursive}
+Heping Zhang, Chang-Yung Yu, Burton Singer, and Momiao Xiong.
+\newblock Recursive partitioning for tumor classification with gene expression
+  microarray data.
+\newblock \emph{Proceedings of the National Academy of Sciences}, 98\penalty0
+  (12):\penalty0 6730--6735, 2001.
+
+\bibitem[Zhu et~al.(2010)Zhu, Ding, Strumpf, Weir, Meyerson, Pennell, Thomas,
+  Naoki, Ladd-Acosta, Liu, et~al.]{zhu2010prognostic}
+Chang-Qi Zhu, Keyue Ding, Dan Strumpf, Barbara~A Weir, Matthew Meyerson, Nathan
+  Pennell, Roman~K Thomas, Katsuhiko Naoki, Christine Ladd-Acosta, Ni~Liu,
+  et~al.
+\newblock Prognostic and predictive gene signature for adjuvant chemotherapy in
+  resected non--small-cell lung cancer.
+\newblock \emph{Journal of Clinical Oncology}, 28\penalty0 (29):\penalty0
+  4417--4424, 2010.
+
+\end{thebibliography}

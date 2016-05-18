@@ -1,0 +1,125 @@
+\begin{thebibliography}{16}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Alizadeh et~al.(2000)Alizadeh, Eisen, Davis, Ma, Lossos, Rosenwald,
+  Boldrick, Sabet, Tran, Yu, et~al.]{alizadeh2000distinct}
+Ash~A Alizadeh, Michael~B Eisen, R~Eric Davis, Chi Ma, Izidore~S Lossos,
+  Andreas Rosenwald, Jennifer~C Boldrick, Hajeer Sabet, Truc Tran, Xin Yu,
+  et~al.
+\newblock Distinct types of diffuse large b-cell lymphoma identified by gene
+  expression profiling.
+\newblock \emph{Nature}, 403\penalty0 (6769):\penalty0 503--511, 2000.
+
+\bibitem[Dobbin and Simon(2007)]{dobbin2007sample}
+Kevin~K Dobbin and Richard~M Simon.
+\newblock Sample size planning for developing classifiers using
+  high-dimensional dna microarray data.
+\newblock \emph{Biostatistics}, 8\penalty0 (1):\penalty0 101--117, 2007.
+
+\bibitem[Dobbin and Simon(2011)]{dobbin2011optimally}
+Kevin~K Dobbin and Richard~M Simon.
+\newblock Optimally splitting cases for training and testing high dimensional
+  classifiers.
+\newblock \emph{BMC medical genomics}, 4\penalty0 (1):\penalty0 31, 2011.
+
+\bibitem[Edgar et~al.(2002)Edgar, Domrachev, and Lash]{edgar2002gene}
+Ron Edgar, Michael Domrachev, and Alex~E Lash.
+\newblock Gene expression omnibus: Ncbi gene expression and hybridization array
+  data repository.
+\newblock \emph{Nucleic acids research}, 30\penalty0 (1):\penalty0 207--210,
+  2002.
+
+\bibitem[Efron and Tibshirani(1997)]{efron1997improvements}
+Bradley Efron and Robert Tibshirani.
+\newblock Improvements on cross-validation: the 632+ bootstrap method.
+\newblock \emph{Journal of the American Statistical Association}, 92\penalty0
+  (438):\penalty0 548--560, 1997.
+
+\bibitem[Hastie et~al.(2009)Hastie, Friedman, and
+  Tibshirani]{hastie2009elements}
+T~Hastie, J~Friedman, and R~Tibshirani.
+\newblock \emph{The elements of statistical learning}, volume~2.
+\newblock Springer, 2009.
+
+\bibitem[Leek et~al.(2016)Leek, Johnson, Parker, Fertig, Jaffe, and
+  Storey]{leeksva}
+JT~Leek, WE~Johnson, HS~Parker, EJ~Fertig, AE~Jaffe, and JD~Storey.
+\newblock sva: Surrogate variable analysis. r package version 3.18.0, 2016.
+
+\bibitem[Moons et~al.(2012)Moons, Kengne, Woodward, Royston, Vergouwe, Altman,
+  and Grobbee]{moons2012riskI}
+Karel~GM Moons, Andre~Pascal Kengne, Mark Woodward, Patrick Royston, Yvonne
+  Vergouwe, Douglas~G Altman, and Diederick~E Grobbee.
+\newblock Risk prediction models: I. development, internal validation, and
+  assessing the incremental value of a new (bio) marker.
+\newblock \emph{Heart}, 98\penalty0 (9):\penalty0 683--690, 2012.
+
+\bibitem[Paik et~al.(2004)Paik, Shak, Tang, Kim, Baker, Cronin, Baehner,
+  Walker, Watson, Park, et~al.]{paik2004multigene}
+Soonmyung Paik, Steven Shak, Gong Tang, Chungyeul Kim, Joffre Baker, Maureen
+  Cronin, Frederick~L Baehner, Michael~G Walker, Drew Watson, Taesung Park,
+  et~al.
+\newblock A multigene assay to predict recurrence of tamoxifen-treated,
+  node-negative breast cancer.
+\newblock \emph{New England Journal of Medicine}, 351\penalty0 (27):\penalty0
+  2817--2826, 2004.
+
+\bibitem[Pepe et~al.(2004)Pepe, Janes, Longton, Leisenring, and
+  Newcomb]{pepe2004limitations}
+Margaret~Sullivan Pepe, Holly Janes, Gary Longton, Wendy Leisenring, and Polly
+  Newcomb.
+\newblock Limitations of the odds ratio in gauging the performance of a
+  diagnostic, prognostic, or screening marker.
+\newblock \emph{American journal of epidemiology}, 159\penalty0 (9):\penalty0
+  882--890, 2004.
+
+\bibitem[Polley et~al.(2013)Polley, Freidlin, Korn, Conley, Abrams, and
+  McShane]{polley2013statistical}
+Mei-Yin~C Polley, Boris Freidlin, Edward~L Korn, Barbara~A Conley, Jeffrey~S
+  Abrams, and Lisa~M McShane.
+\newblock Statistical and practical considerations for clinical evaluation of
+  predictive biomarkers.
+\newblock \emph{J. Natl. Cancer Inst.}, 105\penalty0 (22):\penalty0 1677--1683,
+  2013.
+
+\bibitem[Simon and Freidlin(2011)]{simon2011re}
+Richard~M Simon and Boris Freidlin.
+\newblock Re: Designing a randomized clinical trial to evaluate personalized
+  medicine: A new approach based on risk prediction.
+\newblock \emph{Journal of the National Cancer Institute}, 103\penalty0
+  (5):\penalty0 445--445, 2011.
+
+\bibitem[Subramanian and Simon(2010)]{subramanian2010gene}
+Jyothi Subramanian and Richard Simon.
+\newblock Gene expression--based prognostic signatures in lung cancer: ready
+  for clinical use?
+\newblock \emph{Journal of the National Cancer Institute}, 102\penalty0
+  (7):\penalty0 464--474, 2010.
+
+\bibitem[Therneau(2015)]{survival}
+T~Therneau.
+\newblock \emph{A Package for Survival Analysis in S}.
+\newblock URL: http://CRAN.R-project.org/package=survival, version 2.38
+  edition, 2015.
+
+\bibitem[Tibshirani and Efron(2002)]{tibshirani2002pre}
+Robert~J Tibshirani and Brad Efron.
+\newblock Pre-validation and inference in microarrays.
+\newblock \emph{Statistical applications in genetics and molecular biology},
+  1\penalty0 (1):\penalty0 1--18, 2002.
+
+\bibitem[Zhu et~al.(2010)Zhu, Ding, Strumpf, Weir, Meyerson, Pennell, Thomas,
+  Naoki, Ladd-Acosta, Liu, et~al.]{zhu2010prognostic}
+Chang-Qi Zhu, Keyue Ding, Dan Strumpf, Barbara~A Weir, Matthew Meyerson, Nathan
+  Pennell, Roman~K Thomas, Katsuhiko Naoki, Christine Ladd-Acosta, Ni~Liu,
+  et~al.
+\newblock Prognostic and predictive gene signature for adjuvant chemotherapy in
+  resected non--small-cell lung cancer.
+\newblock \emph{Journal of Clinical Oncology}, 28\penalty0 (29):\penalty0
+  4417--4424, 2010.
+
+\end{thebibliography}
