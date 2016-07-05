@@ -11,3 +11,6 @@
 /Documents/paper-revised-resub_cache
 /Documents/paper-revised-round2_cache
 *.gz
+Data/
+Documents/paper-revised_cache/
+Documents/paper_cache/
