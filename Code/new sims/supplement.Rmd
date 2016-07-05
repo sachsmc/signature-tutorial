@@ -1,0 +1,109 @@
+---
+title: "Issues in developing multivariable molecular signatures for guiding clinical care decisions: supplemental simulation results"
+author: "Michael C Sachs and Lisa M McShane"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+    pdf_document:
+      citation_package: natbib
+      keep_tex: yes
+      fig_caption: yes
+      pandoc_args: ["--bibliography", "paper.bib"]
+header-includes:
+    - \usepackage{setspace}
+fontsize: 11pt
+geometry: margin=1in
+---
+
+# Additional Simulation Results
+
+In the tables and figures below, $N$ is to the number of samples, and $p$ is the number of variables per sample. All results are from 1000 simulation replicates. 
+
+```{r setup, include = FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(survival)
+library(ggkm)
+library(tidyr)
+library(stargazer)
+
+opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE, warning = FALSE)
+knit_hooks$set(plot = function(x, options) {
+  if ('tikz' %in% options$dev && !options$external) {
+    hook_plot_tex(x, options)
+  } else hook_plot_md(x, options)
+})
+
+source("newsims.R")
+
+```
+
+
+```{r cycle, echo = FALSE, results = "asis"}
+files <- grep("*.txt", list.files(), value = TRUE)
+results <- lapply(files, parse_sims)
+
+for(i in results){
+  
+  cat(i$table)
+  
+}
+```
+
+```{r plotsauc, echo = FALSE, results = "asis"}
+for(i in results){
+  
+  print(i$plot.auc)
+  cat("\n\\clearpage\n\n")
+  
+}
+```
+
+
+
+```{r plots2, echo = FALSE, results = "asis"}
+for(i in results){
+  
+  print(i$plot.or)
+  cat("\n\\clearpage\n\n")
+  
+}
+```
+
+
+```{r overall, fig.height = 8.5}
+alldat <- NULL
+for(i in results){
+  
+  alldat <- rbind(alldat, i$datalong)
+  
+}
+
+ labs <- c("Resubstitution", "Partial CV",
+            "Partial Holdout", "Partial Resubstitution",
+            "Pre-validation", "Leave 10 out CV", "Leave 100 out CV",
+            "30% Holdout", "50% Holdout", "Bootstrap")
+
+  names(labs) <- levels(alldat$scen)
+
+ggplot(subset(alldat, stat == "AUC"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") +
+    theme_bw(base_size = 13, base_family = "serif") + coord_flip() +
+    scale_x_discrete("Estimation Approach", labels = labs) +
+    ylab("Area Under the ROC Curve") + facet_grid(p ~ N, labeller = "label_both")
+```
+
+
+
+
+```{r, fig.height = 8.5}
+alldat$value[alldat$stat == "OR"] <- exp(alldat$value[alldat$stat == "OR"])
+
+ggplot(subset(alldat, stat == "OR"), aes(y = value, x = scen)) + geom_violin(fill = "grey60") +
+    theme_bw(base_size = 13, base_family = "serif") + coord_flip() +
+    scale_x_discrete("Estimation Approach", labels = labs) + scale_y_log10(breaks = c(.5, 2, 5, 20, 80)) +
+    ylab("Odds Ratio (log scale)") + facet_grid(p ~ N, labeller = "label_both")
+
+```
+
+
+
