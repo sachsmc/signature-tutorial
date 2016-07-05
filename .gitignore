@@ -1,3 +1,13 @@
 /Papers
 .DS_Store
 *.RData
+/Submit
+*.aux
+*.log
+*.out
+*.bbl
+/*cache
+*.Rhistory
+/Documents/paper-revised-resub_cache
+/Documents/paper-revised-round2_cache
+*.gz

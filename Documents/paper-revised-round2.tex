@@ -69,19 +69,17 @@
 clinical care decisions}
   \pretitle{\vspace{\droptitle}\centering\huge}
   \posttitle{\par}
-  \author{Michael C Sachs and Lisa M McShane}
+  \author{Michael C Sachs$^*$ and Lisa M McShane}
   \preauthor{\centering\large\emph}
   \postauthor{\par}
   \predate{\centering\large\emph}
   \postdate{\par}
-  \date{May 20, 2016}
+  \date{July 05, 2016}
 
 
 \usepackage{setspace}
 \usepackage{tablefootnote}
 \doublespacing
-\usepackage{lineno}
-\linenumbers
 
 % Redefines (sub)paragraphs to behave more like sections
 \ifx\paragraph\undefined\else
@@ -96,26 +94,34 @@ clinical care decisions}
 \begin{document}
 \maketitle
 
+\begin{center}
+\textit{Biostatistics Branch, Biometric Research Program \\
+National Cancer Institute \\
+9609 Medical Center Drive, MSC 9735 \\
+Bethesda, MD 20892-9735 \\
+Phone: 240-276-6004 \\
+Email: michael.sachs@nih.gov \\
+*: Corresponding Author}
+
+\end{center}
+
 \section{Abstract}\label{abstract}
 
 Omics technologies that generate a large amount of molecular data
-characterizing patient biospecimens have the potential to provide
-information about patients' disease characteristics above and beyond
-standard clinical and pathological features. By combining the
-information from a large number of molecular features into a
-multivariable model or decision algorithm, called a biomarker signature,
-there is the opportunity to identify distinct subgroups of patients for
-whom treatment decisions can be personalized. A biomarker signature can
-guide decisions to treat or not to treat and help identify the patients
-who are most likely to have a more favororable outcome or benefit from a
-particular therapy. The key challenge is to combine features from a high
-dimensional molecular assay to derive a signature with good clinical
-performance and appropriately characterize its performance. The
-inappropriate practice of using overlapping data to both build a
-signature and evaluate its performance can lead to severe over-optimism
-bias in performance estimates. We summarize the key statistical issues
-and methods for developing and validating biomarker signatures, using
-examples from the literature for illustration.
+characterizing biospecimens have the potential to provide information
+about patients' disease characteristics beyond standard clinical
+features. By combining information from a large number of features into
+a multivariable model, called a biomarker signature, there is the
+opportunity to identify distinct subgroups of patients for whom
+treatment decisions can be personalized. The key challenge is to derive
+a signature with good performance and appropriately characterize its
+performance. We summarize the key statistical issues and methods for
+developing and validating biomarker signatures, using examples from the
+literature for illustration. \\
+
+\textbf{keywords}: biomarkers; biomarker signatures; personalized medicine
+
+\clearpage
 
 \section{Introduction}\label{introduction}
 
@@ -290,9 +296,9 @@ potentially subject to bias if overfitting occurs, but such biases
 frequently go unrecognized in the medical literature.
 
 Typically a performance metric \(\phi\) used during signature
-development is degined to quantify either calibration or discrimination,
-or some combination of the two. Calibration assesses how well the
-signature-based predictions compare to the observed outcomes.
+development is designed to quantify either calibration or
+discrimination, or some combination of the two. Calibration assesses how
+well the signature-based predictions compare to the observed outcomes.
 Discrimination assesses how well the signature distinguishes between
 groups of patients who do or do not experience an event or have a
 particular phenotype. To assess discrimination, a different metric
@@ -305,7 +311,7 @@ the hazard ratio comparing disease-specific survival between the groups
 identified as high risk and low risk. The risk groups were determined by
 the signature \(f\), which was estimated using the JBL.10 observation
 arm data. The signature was then applied to the same data that were used
-to build it to define risk groups, producing a the hazard ratio estimate
+to build it to define risk groups, producing the hazard ratio estimate
 of 15 for the prognostic effect comparing signature-defined risk groups
 in the observation arm. Subsequent evaluations of the signature's
 performance on independent data resulted in hazard ratio estimates in
@@ -385,10 +391,28 @@ of computing the statistic \(\phi\) for each of the held-out subsets
 fitted signature \(\hat{f}(X_i)\) is estimated for \(X_i \in S_{-b}\)
 where \(\hat{f}\) is estimated using \(S_{b}\). This process is repeated
 to obtain a set of pre-validated signature estimates
-\(\{\hat{f}_i, i = 1, \ldots, n\}\) which are then used to calculate
-\(\phi\). For cross-validation and the bootstrap, this process avoids
-the problem of having too few cases to estimate the statistic \(\phi\)
-on each of the smaller held-out datasets.
+\(\{\hat{f}_i, i = 1, \ldots, n\}\). Then some measure of the
+association between these signature estimates and the withheld true
+outcomes, \(Y_i, i = 1, \ldots, n\), is estimated to serve as a measure
+of the signature performance. The association measure \(\phi\) could be
+estimated as a coefficient in a linear, Cox proportional hazards, or
+logistic regression model, with or without adjustment for other
+covariates, as appropriate for the situation. The idea behind this
+pre-validation approach is that if the signature has good performance,
+then it should produce values that are strongly associated with the true
+outcomes. In contrast to cross-validation and the bootstrap, this
+process avoids the problem of having too few cases to estimate the
+statistic \(\phi\) on each of the smaller held-out datasets.
+
+These resampling-based procedures described above provide unbiased
+estimates of predictive accuracy for the procedure, that is
+\(E_{\mathcal{P}}[\phi_{\mathcal{F}}(S)]\), as opposed to the accuracy
+for a particular signature that others can use. Often, we will provide
+the signature developed on the entire dataset as the one for future use,
+as using the full data will estimate signature coefficients with the
+most precision. Still, it is important to avoid the temptation to report
+the estimate of performance on this full data signature, as it can be
+severly biased.
 
 \subsection{Simulation Study}\label{simulation-study}
 
@@ -408,15 +432,16 @@ Partial Resubstitution & Split data into $S_t$ and $S_h$. Select features on $S_
 
 To illustrate some of the different properties of these estimates and
 how they help to avoid overfitting, we conduct a limited simulation
-study. Data were generated with 1000 observations, each with a binary
-outcome \(Y\) with prevalence 0.3, and 500 mutually independent features
-sampled from the standard normal distribution. This is the null case
-where no features are associated with \(Y\). The signature development
-procedure entails a feature selection step, in which each feature is
-regressed against \(Y\) in a univariate logistic regression model. The
-25 features with the smallest p-values are selected for inclusion in a
-multivariable logistic regression model which defines the final
-signature.
+study. Data were generated with \(N = 200\) or 1000 observations, each
+with a binary outcome \(Y\) with prevalence 0.3, and
+\(p = 10, 100, 500,\) or \(5000\) mutually independent features sampled
+from the standard normal distribution. This is the null case where no
+features are associated with \(Y\). The signature development procedure
+entails a feature selection step, in which each feature is regressed
+against \(Y\) in a univariate logistic regression model. The 25 (10 in
+the case where \(p = 10\)) features with the smallest p-values are
+selected for inclusion in a multivariable logistic regression model
+which defines the final signature.
 
 We compare each of the methods described above: split-sample holdout,
 cross-validation, bootstrap, and pre-validation, along with several
@@ -438,24 +463,24 @@ groups.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{paper-revised_files/figure-latex/cvsims-1.pdf}
+\includegraphics{paper-revised-round2_files/figure-latex/cvsims-1.pdf}
 \caption{Comparison of different approaches to estimating the Area Under
 the ROC Curve (AUC) in the setting where a dataset is used to both
 develop the signature and evaluate its performance. The violin plots
 show mirrored density estimates for the AUC for 1000 replicates of the
-numerical experiment. In each replicate, there are 1000 observations and
-500 features. The true value of the AUC is 0.5. CV = Cross validation.
-\label{fig1}}
+numerical experiment. In each replicate, there are \(N\) observations
+and \(p\) features. The true value of the AUC is 0.5. CV = Cross
+validation. \label{fig1}}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{paper-revised_files/figure-latex/cvsims2-1.pdf}
+\includegraphics{paper-revised-round2_files/figure-latex/cvsims2-1.pdf}
 \caption{Comparison of different approaches to estimating the odds ratio
 (OR) in the setting where a dataset is used to both develop the
 signature and evaluate its performance. The violin plots show mirrored
 density estimates for the log OR for 1000 replicates of the numerical
-experiment. In each replicate, there are 1000 observations and 500
+experiment. In each replicate, there are \(N\) observations and \(p\)
 features. The true value of the OR is 1.0. CV = Cross validation.
 \label{fig2}}
 \end{figure}
@@ -467,7 +492,8 @@ dataset is used to both develop the signature and evaluate its
 performance. The true value of the AUC is 0.5 and the true value of the
 Log OR is 0.0. Estimates are based on 1000 replicates of the numerical
 experiment. In each replicate, there are 1000 observations and 500
-features. CV = Cross validation.}\tabularnewline
+features. CV = Cross validation. Additional results for different \(N\)
+and \(p\) are in the appendix.}\tabularnewline
 \toprule
 Approach & mean AUC & std.dev AUC & Bias AUC & mean OR & std.dev OR &
 Bias OR\tabularnewline
@@ -495,18 +521,27 @@ Bootstrap & 0.50 & 0.01 & 0.00 & 0.00 & 0.08 & 0.00\tabularnewline
 \end{longtable}
 
 Not surprisingly, the resubstitution estimates are optimistically
-biased: the naive resubstitution estimate of the AUC is 44\% larger than
-it should be and the log OR estimate is over 300\% higher than it should
-be, on average. Partial resubstitution, partial holdout, and partial
-cross-validation estimates do not ameliorate the bias very much.
-Investigators are tempted to use partial holdout estimates as it is more
-convenient to not have to carry along a large number of feature
-measurements into the modeling part of the signature development
-process, and they may think that the resulting performance estimates are
-still close to valid, as only half of the data are used to form the
-estimates. However, here we see that these versions are still severely
-biased and should not be reported as valid assessments of the
-performance of biomarker signatures.
+biased: for \(N = 1000\) and \(p = 500\) the naive resubstitution
+estimate of the AUC is 44\% larger than it should be and the log OR
+estimate is over 2 times higher than it should be, on average. Partial
+resubstitution, partial holdout, and partial cross-validation estimates
+do not ameliorate the bias very much. Investigators are tempted to use
+partial holdout estimates as it is more convenient to not have to carry
+along a large number of feature measurements into the modeling part of
+the signature development process, and they may think that the resulting
+performance estimates are still close to valid, as only half of the data
+are used to form the estimates. However, here we see that these versions
+are still severely biased and should not be reported as valid
+assessments of the performance of biomarker signatures.
+
+It is evident in Figures \ref{fig1} and \ref{fig2} that the amount of
+bias tends to increase as the number of features increases. Even with
+only 10 features to select from, the resubstitution estimates are still
+biased. A larger sample size does not help with the bias, though it does
+improve precision of the performance estimates. With \(N = 200\) and
+\(p = 5000\), which is the situation closest to our real data example,
+we see that the resubstitution estimate indicates nearly perfect
+prediction performance, when in fact there is no signal in the data.
 
 The split-sample holdout, cross-validation, bootstrap, and
 pre-validation methods all produce esentially unbiased estimates in the
@@ -622,7 +657,7 @@ indicating much worse discrimination.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{paper-revised_files/figure-latex/examppresub-1.pdf}
+\includegraphics{paper-revised-round2_files/figure-latex/examppresub-1.pdf}
 \caption{Comparison of survival by gene expression based risk signature.
 The left plot shows the resubstitution estimate, while the right plot
 shows the pre-validated estimate. \label{fig3}}
@@ -630,7 +665,7 @@ shows the pre-validated estimate. \label{fig3}}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{paper-revised_files/figure-latex/inter1-1.pdf}
+\includegraphics{paper-revised-round2_files/figure-latex/inter1-1.pdf}
 \caption{Survival curves comparing the treatment effect by gene
 expression signature risk group. The top set of plots shows the partial
 resubstitution based signature and the bottom row shows the
@@ -663,7 +698,7 @@ p$^*$\tabularnewline
 0.122\tabularnewline
 & Trt/Risk interaction & 1.8 & 0.5 to 6.5 & 0.395\tabularnewline
 \bottomrule
-& \multicolumn{4}{r}{* - CI's and p-values based on incorrect inference.}
+& \multicolumn{4}{r}{CI's and p-values based on incorrect inference.} \\
 \end{longtable}
 
 We also show plots to assess the ability of the signature to be useful
@@ -795,13 +830,18 @@ to develop and assess performance of molecular signatures, but many have
 not had much prior experience in this analytical area. The problematic
 approaches highlighted in the examples and simulations included naïve
 resubstitution, partial resubstitution, partial holdout, and partial CV.
-The simulations demonstrated how even in a simple null situation with a
-large sample size, the over-optimism bias in performance estimates is
-quite substantial, possibly enough to persuade some to adopt these
-signatures for clinical care prematurely. The magnitude of the bias
-could be even greater with more modest samples sizes or more convoluted
-signature development methods as are typical in the published
-literature. Strategies to avoid this type of bias are well-studied in
+The simulations demonstrated how even in a simple null situation, the
+over-optimism bias in performance estimates is quite substantial,
+possibly enough to persuade some to adopt these signatures for clinical
+care prematurely. The magnitude of the bias could be even greater with
+more modest samples sizes or more convoluted signature development
+methods as are typical in the published literature. In our simulations
+and data example, we used a simple variable selection procedure follow
+by multivariable regression. More complex statistical methods for
+developing signatures such as the lasso, random forests, and others are
+not immune to this type of bias. In fact, more complex methods often
+involve tuning parameters, which give more opportunities for bias due to
+overfitting. Strategies to avoid this type of bias are well-studied in
 the statistical literature and here we demonstrated how they can be
 implemented in a real clinical example.
 
@@ -819,7 +859,7 @@ complete and transparent fashion.
 \section{Note}\label{note}
 
 All analysis code and the source files for this manuscript are available
-from the authors' webpage.
+from the authors' webpage: https://github.com/sachsmc/signature-tutorial
 
 \renewcommand\refname{References}
 \bibliography{paper.bib}
